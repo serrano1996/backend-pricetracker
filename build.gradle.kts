@@ -57,6 +57,7 @@ allOpen {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+	systemProperty("spring.profiles.active", "test")
 }
 
 // Only the Spring Boot fat jar is needed (Dockerfile copies a single jar)

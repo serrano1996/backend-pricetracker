@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: backend-pricetracker
+  config:
+    # Local convenience: reads KEY=value pairs from ./.env when present (never committed)
+    import: optional:file:.env[.properties]
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    # Defaults match docker-compose.yml; production sets DB_URL with ?sslmode=require
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/pricetracker}
+    username: ${DB_USER:pricetracker}
+    password: ${DB_PASSWORD:pricetracker}
+    hikari:
+      # Supabase free has few connections; scraper calls never hold one (plan 001 D4)
+      maximum-pool-size: 5
+      connection-timeout: 10000 # ms (Hikari binds a long, not a Duration)
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      show-components: never
+
+pricetracker:
+  search:
+    freshness-ttl: ${SEARCH_FRESHNESS_TTL:PT12H}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+  scrapers:
+    warmup-idle: ${SCRAPER_WARMUP_IDLE:PT10M}
+    # No defaults on purpose: the app must not start without real scraper URLs and keys
+    mercadona:
+      url: ${SCRAPER_MERCADONA_URL}
+      api-key: ${SCRAPER_MERCADONA_API_KEY}
+    alcampo:
+      url: ${SCRAPER_ALCAMPO_URL}
+      api-key: ${SCRAPER_ALCAMPO_API_KEY}
+    dia:
+      url: ${SCRAPER_DIA_URL}
+      api-key: ${SCRAPER_DIA_API_KEY}

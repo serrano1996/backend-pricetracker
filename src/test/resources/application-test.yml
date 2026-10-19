@@ -1,0 +1,12 @@
+# Active for every test run (see tasks.test in build.gradle.kts). Fake scrapers; real ones are WireMock-stubbed per test.
+pricetracker:
+  scrapers:
+    mercadona:
+      url: http://localhost:1
+      api-key: test-mercadona
+    alcampo:
+      url: http://localhost:1
+      api-key: test-alcampo
+    dia:
+      url: http://localhost:1
+      api-key: test-dia

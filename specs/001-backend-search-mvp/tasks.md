@@ -10,7 +10,7 @@ Desglose de [plan.md](plan.md). Orden = orden de dependencia.
   RF: base.
   Hecho cuando: `./gradlew build` en verde con el test de contexto y `docker compose up` levanta BD y Redis.
 
-- [ ] **T2 — `application.yml` y propiedades**
+- [x] **T2 — `application.yml` y propiedades**
   Datasource por env (SSL), Hikari (`maximum-pool-size` pequeño), `ddl-auto=validate`, virtual threads, `ScraperProperties` (url, apiKey, connect/read timeout por tienda, por defecto 25 s), `SCRAPER_WARMUP_IDLE`, `SEARCH_FRESHNESS_TTL`, CORS, actuator solo `health`.
   Depende: T1. RF: RF-12, RF-13.
   Hecho cuando: test de binding de `ScraperProperties`; `/actuator/health` responde 200 sin detalles.
