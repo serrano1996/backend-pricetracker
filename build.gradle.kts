@@ -40,6 +40,8 @@ dependencies {
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 	testImplementation("org.testcontainers:testcontainers-junit-jupiter")
 	testImplementation("org.testcontainers:testcontainers-postgresql")
+	// standalone shades its own Jetty/Jackson, so it does not clash with Spring Boot's
+	testImplementation("org.wiremock:wiremock-standalone:3.13.2")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

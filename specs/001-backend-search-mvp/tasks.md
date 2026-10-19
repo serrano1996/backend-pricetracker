@@ -41,9 +41,10 @@ Desglose de [plan.md](plan.md). Orden = orden de dependencia.
   Depende: T3. RF: RF-6, RF-7.
   Hecho cuando: test de repositorio guarda y lee un `store_product` con su histórico.
 
-- [ ] **T8 — `ScraperClient`**
+- [x] **T8 — `ScraperClient`**
   Depende: T2, T6. RF: RF-8, RF-10, RF-12.
   Hecho cuando: tests WireMock de la tabla D8 y de la cabecera `X-API-Key`; la key no aparece en logs.
+  Nota: `wiremock-standalone` 3.13.2 (shaded, sin conflicto con Jetty/Jackson de Boot). Verificado en los scrapers: ninguno devuelve "Page out of range" en la página 1, así que una búsqueda vacía llega como `200` con `products: []`.
 
 - [ ] **T8b — `ScraperWarmup`**
   Depende: T8. RF: RF-14.
