@@ -59,4 +59,4 @@ Necesita Docker: los tests de integración levantan PostgreSQL y Redis con Testc
 
 ## Estado
 
-Spec 001 completada y verificada contra los scrapers reales. Specs 002 y 003 por implementar.
+Specs 001 y 002 completadas (001 verificada contra los scrapers reales). Spec 003 por implementar.
