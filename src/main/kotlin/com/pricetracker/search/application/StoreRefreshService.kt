@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.math.RoundingMode
 import java.time.Clock
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 /** Persists one store's scraper answer: products, price history and the search snapshot (spec 001 RF-6, RF-7, RF-10). */
 @Service
@@ -32,7 +33,8 @@ class StoreRefreshService(
     @Transactional
     fun persist(store: StoreName, term: SearchTerm, postalCode: PostalCode, result: StoreSearchResult): SearchSnapshotEntity {
         require(result !is StoreSearchResult.Unavailable) { "unavailable results are never persisted" }
-        val now = clock.instant()
+        // Postgres keeps microseconds: the value returned now must equal the one read back later
+        val now = clock.instant().truncatedTo(ChronoUnit.MICROS)
         val (status, items) = when (result) {
             is StoreSearchResult.Found -> SnapshotStatus.OK to upsert(store, result, now)
             else -> SnapshotStatus.NOT_SERVED to emptyList()

@@ -1,6 +1,6 @@
 # Constitución del proyecto — backend-pricetracker
 
-1. **Stack fijo:** Kotlin 2.x, Spring Boot 4.x (Spring MVC + virtual threads + coroutines para el fan-out), Gradle Kotlin DSL, Spring Data JPA, Flyway, Spring Data Redis, PostgreSQL (Supabase). No añadir librerías fuera de esto sin discutirlo (ver [architecture.md](architecture.md) D1–D3).
+1. **Stack fijo:** Kotlin 2.x, Spring Boot 4.x (Spring MVC + virtual threads), Gradle Kotlin DSL, Spring Data JPA, Flyway, Spring Data Redis, PostgreSQL (Supabase). No añadir librerías fuera de esto sin discutirlo (ver [architecture.md](architecture.md) D1–D3).
 2. **Fuente de datos:** el backend solo consume los tres scrapers propios (`mercadona-scraper`, `alcampo-scraper`, `dia-scraper`) vía su contrato `GET /api/v1/products`. Nunca llama directamente a las webs/APIs de los supermercados.
 3. **Fuente de verdad:** PostgreSQL es la fuente de verdad (catálogo, snapshots de búsqueda, histórico). Redis es solo coordinación (candados) y nunca guarda datos que no se puedan perder.
 4. **Esquema por migraciones:** todo cambio de esquema va en una migración Flyway versionada. `spring.jpa.hibernate.ddl-auto=validate`, nunca `update`.

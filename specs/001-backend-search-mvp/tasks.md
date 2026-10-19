@@ -5,7 +5,7 @@ Desglose de [plan.md](plan.md). Orden = orden de dependencia.
 ## Setup
 
 - [x] **T1 — Scaffolding**
-  Proyecto Gradle (Kotlin DSL) generado con Spring Initializr: Spring Boot 4.1.1, Kotlin 2.3.21, JDK 25; plugins `kotlin-spring` y `kotlin-jpa`; deps: webmvc, data-jpa, flyway, data-redis, actuator, validation, postgresql, jackson-module-kotlin; test: testcontainers (postgres, redis). WireMock entra en T8 y kotlinx-coroutines en T10, al usarse. `.gitignore`, `.env.example` (solo nombres de variables), `docker-compose.yml` (postgres:17-alpine, redis:7-alpine), `Dockerfile` multi-stage, `.dockerignore`.
+  Proyecto Gradle (Kotlin DSL) generado con Spring Initializr: Spring Boot 4.1.1, Kotlin 2.3.21, JDK 25; plugins `kotlin-spring` y `kotlin-jpa`; deps: webmvc, data-jpa, flyway, data-redis, actuator, validation, postgresql, jackson-module-kotlin; test: testcontainers (postgres, redis). WireMock entra en T8; kotlinx-coroutines finalmente no se usa (plan D3). `.gitignore`, `.env.example` (solo nombres de variables), `docker-compose.yml` (postgres:17-alpine, redis:7-alpine), `Dockerfile` multi-stage, `.dockerignore`.
   Estado (2026-10-19): `./gradlew build` en verde (test de contexto con Testcontainers) y `docker build` correcto.
   RF: base.
   Hecho cuando: `./gradlew build` en verde con el test de contexto y `docker compose up` levanta BD y Redis.
@@ -57,7 +57,7 @@ Desglose de [plan.md](plan.md). Orden = orden de dependencia.
   Depende: T5, T7. RF: RF-6, RF-7, RF-10.
   Hecho cuando: tests: alta → 1 histórico; mismo precio → 0; precio distinto → 1 más; duplicado en respuesta → una fila; lista vacía → snapshot fresco vacío.
 
-- [ ] **T10 — `SearchService`**
+- [x] **T10 — `SearchService`**
   Frescura por tienda, refresco paralelo, fallback a snapshot obsoleto, 502 si todo falla.
   Depende: T8, T9. RF: RF-1, RF-4, RF-5, RF-8, RF-9.
   Hecho cuando: tests con `Clock` fijo: fresco → 0 llamadas; 13 h después → 1 llamada por tienda; una tienda caída con snapshot → `stale: true`; sin snapshot → `unavailable`; tres caídas sin datos → excepción mapeada a 502; latencia paralela < 2 s con retardos de 1 s.

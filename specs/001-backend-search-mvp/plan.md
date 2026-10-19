@@ -72,10 +72,11 @@ RF: RF-4, RF-6.
 **Descartado:** un único snapshot por término. Motivo: si Alcampo falla, se re-golpearía a Mercadona y Dia sin necesidad en la siguiente búsqueda.
 RF: RF-4, RF-8.
 
-### D3 — Paralelismo con coroutines sobre virtual threads
-**Elegido:** `SearchService` hace `runBlocking { coroutineScope { staleStores.map { async(vtDispatcher) { client.search(it, …) } }.awaitAll() } }` con `withTimeout` global; la persistencia (`StoreRefreshService`) se llama después, fuera de la coroutine, una vez por tienda.
-**Descartado:** WebFlux/`Mono.zip`. Motivo: JPA es bloqueante; así el código es lineal y testeable sin `StepVerifier`.
-**Descartado:** controladores `suspend`. Motivo: las transacciones de Spring van ligadas al hilo; mezclarlas con coroutines que cambian de hilo da errores sutiles. Las coroutines quedan limitadas al fan-out HTTP.
+### D3 — Paralelismo con virtual threads
+**Elegido (implementado en T10):** `SearchService` envía una tarea por tienda caducada a `Executors.newVirtualThreadPerTaskExecutor()` y espera con `future.get()`; sin timeout global, porque cada llamada ya está acotada por el `read-timeout` de su tienda y el puerto nunca lanza. La persistencia (`StoreRefreshService`) se ejecuta después, en el hilo de la petición, una vez por tienda.
+**Descartado:** coroutines (`runBlocking { async(vtDispatcher) }`). Motivo: envolver llamadas bloqueantes en `runBlocking` añade una dependencia y otro modelo de concurrencia sin ganar nada sobre virtual threads.
+**Descartado:** WebFlux/`Mono.zip`. Motivo: JPA es bloqueante.
+**Descartado:** controladores `suspend`. Motivo: las transacciones de Spring van ligadas al hilo.
 RF: RF-5.
 
 ### D4 — Una transacción por tienda

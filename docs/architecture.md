@@ -53,14 +53,14 @@ Los tres exponen el mismo contrato, verificado en su código (`app/models/produc
 | `products` (catálogo unificado) obligatorio | `store_products.product_id` **nullable**; el matching entre tiendas es una spec futura | Unificar "Leche entera Hacendado 1L" con "Leche entera Alcampo 1L" es un problema propio (normalización/fuzzy matching). No bloquea el MVP. |
 | Histórico en cada refresco (§1) vs. solo en cambio (§5) | Solo cuando cambia el precio (o alta del producto) | 500 MB en Supabase free; un registro por refresco crece sin aportar información. |
 | `search_metrics.query_term` único | Único por `(query_term, postal_code)` | El job necesita saber para qué código postal refrescar. |
-| WebFlux + JPA | Spring MVC + virtual threads + `RestClient`; fan-out con coroutines | JPA es bloqueante; mezclarlo con WebFlux obliga a `subscribeOn(boundedElastic)` en todas partes. Con coroutines sobre un dispatcher de virtual threads, el paralelismo de 3 llamadas es código lineal. |
+| WebFlux + JPA | Spring MVC + virtual threads + `RestClient` | JPA es bloqueante; mezclarlo con WebFlux obliga a `subscribeOn(boundedElastic)` en todas partes. Con un executor de virtual threads, el paralelismo de 3 llamadas es código lineal. |
 | Redisson | `SET NX PX` + borrado con token (Lua) vía Spring Data Redis | Un candado simple con TTL basta; evita una dependencia. |
 | Flyway o Liquibase | Flyway | SQL plano, menos ceremonia. |
 
 ## 4. Decisiones de stack
 
 - **D1 — Kotlin 2.x + Spring Boot 4.x + Gradle Kotlin DSL.** Decidido por el usuario (2026-10-19). Versiones fijadas en T1 (2026-10-19): Spring Boot 4.1.1, Kotlin 2.3.21, Gradle 9.8.1, JDK 25 (LTS). Virtual threads (`spring.threads.virtual.enabled=true`).
-- **D2 — `RestClient` (bloqueante) + coroutines para el paralelismo:** `coroutineScope { stores.map { async(vtDispatcher) { … } }.awaitAll() }`, con `vtDispatcher = Executors.newVirtualThreadPerTaskExecutor().asCoroutineDispatcher()`. Controladores MVC normales (no `suspend`) para no mezclar transacciones JPA con coroutines.
+- **D2 — `RestClient` (bloqueante) + virtual threads para el paralelismo:** una tarea por tienda en `Executors.newVirtualThreadPerTaskExecutor()` y `future.get()`; cada llamada ya está acotada por el timeout de su tienda. Se descartaron coroutines (decisión en T10): `runBlocking` alrededor de código bloqueante y una dependencia más, sin ganancia. Controladores MVC normales (no `suspend`).
 - **D3 — Tests:** JUnit 5, AssertJ (o `kotlin.test`), Testcontainers (`postgres:17-alpine`, `redis:7-alpine`), WireMock para simular scrapers.
 
 ## 5. Estructura de paquetes

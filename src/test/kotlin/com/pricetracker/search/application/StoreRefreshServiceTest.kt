@@ -98,15 +98,16 @@ class StoreRefreshServiceTest(
     @Test
     fun `snapshot is replaced in place with the new order and fetch time`() {
         persist(offer("a", "1.00"), offer("b", "2.00"))
-        val first = snapshots.findAll().single()
+        // Copied out: the shared test transaction hands persist() this same managed instance
+        val (firstId, firstFetchedAt) = snapshots.findAll().single().let { it.id to it.fetchedAt }
 
         persist(offer("c", "3.00"), offer("a", "1.00"))
 
         val second = snapshots.findAll().single()
-        assertEquals(first.id, second.id)
+        assertEquals(firstId, second.id)
         assertEquals(SnapshotStatus.OK, second.status)
         assertEquals(listOf("c", "a"), second.items.map { it.externalId })
-        assertTrue(!second.fetchedAt.isBefore(first.fetchedAt))
+        assertTrue(!second.fetchedAt.isBefore(firstFetchedAt))
     }
 
     @Test

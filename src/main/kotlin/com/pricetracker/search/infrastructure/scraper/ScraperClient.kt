@@ -39,7 +39,7 @@ class ScraperClient(properties: ScraperProperties, private val clock: Clock) : S
      * Pings `/health` in the background on every scraper idle for at least `warmupIdle`, so a sleeping
      * Render free instance starts waking up before a search needs it (spec 001 RF-14). Never blocks.
      */
-    fun wakeIdleScrapers() {
+    override fun wakeIdleScrapers() {
         StoreName.entries.filter(::claimIfIdle).forEach { store ->
             Thread.ofVirtual().name("scraper-warmup-${store.code}").start { ping(store) }
         }

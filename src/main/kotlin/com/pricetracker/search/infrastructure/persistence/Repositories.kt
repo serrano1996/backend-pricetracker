@@ -1,6 +1,7 @@
 package com.pricetracker.search.infrastructure.persistence
 
 import com.pricetracker.search.domain.StoreName
+import org.springframework.data.jpa.repository.EntityGraph
 import org.springframework.data.jpa.repository.JpaRepository
 import java.util.UUID
 
@@ -17,6 +18,8 @@ interface StoreProductRepository : JpaRepository<StoreProductEntity, UUID> {
 interface PriceHistoryRepository : JpaRepository<PriceHistoryEntity, Long>
 
 interface SearchSnapshotRepository : JpaRepository<SearchSnapshotEntity, UUID> {
+    // Items fetched in the same query: callers read them outside any transaction (open-in-view is off)
+    @EntityGraph(attributePaths = ["items"])
     fun findByQueryTermAndPostalCodeAndStoreName(queryTerm: String, postalCode: String, storeName: StoreName): SearchSnapshotEntity?
 }
 
