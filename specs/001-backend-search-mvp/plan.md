@@ -22,7 +22,6 @@ src/main/kotlin/com/pricetracker/
 │   ├── infrastructure/
 │   │   ├── scraper/ScraperClient.kt      # RestClient por tienda, mapea HTTP → StoreSearchResult (RF-8, RF-10, RF-12)
 │   │   ├── scraper/ScraperProperties.kt  # @ConfigurationProperties: url, apiKey, timeouts por tienda
-│   │   ├── scraper/ScraperWarmup.kt      # ping /health asíncrono a scrapers inactivos (RF-14)
 │   │   └── persistence/                    # entidades + repos (sección 2)
 │   └── web/
 │       ├── SearchController.kt     # GET /api/v1/search
@@ -49,7 +48,7 @@ Cobertura por RF:
 | RF-11 | `SearchMetricRecorder` |
 | RF-12 | `ScraperClient`, `ScraperProperties` |
 | RF-13 | Spring Boot Actuator (config) |
-| RF-14 | `ScraperWarmup` |
+| RF-14 | `ScraperClient.wakeIdleScrapers` |
 
 ## 2. Modelo de datos
 
@@ -101,7 +100,7 @@ RF: RF-11.
 RF: caso límite "price_format no parseable".
 
 ### D7b — Warm-up sin bloquear
-**Elegido:** `ScraperWarmup` guarda en memoria el último instante de llamada por tienda y, si supera 10 min, lanza `GET /health` en una coroutine de fondo (`SupervisorJob`, errores solo a log).
+**Elegido (implementado en T8b):** `ScraperClient.wakeIdleScrapers()` guarda en memoria el último contacto por tienda (búsqueda o ping) y, si pasa de `warmup-idle`, lanza `GET /health` en un virtual thread; errores solo a log. La comprobación es atómica (`ConcurrentHashMap.compute`): búsquedas simultáneas hacen un único ping. Vive en el cliente porque es quien tiene los `RestClient` y ve cada contacto; un virtual thread basta para un *fire-and-forget* y evita adelantar la dependencia de coroutines.
 **Descartado:** cron de ping cada 14 min. Motivo: tres servicios despiertos 24/7 superan las horas gratuitas de Render (architecture.md §8).
 RF: RF-14.
 

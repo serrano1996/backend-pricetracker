@@ -19,6 +19,7 @@ import org.springframework.boot.test.system.CapturedOutput
 import org.springframework.boot.test.system.OutputCaptureExtension
 import java.math.BigDecimal
 import java.net.URI
+import java.time.Clock
 import java.time.Duration
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -42,7 +43,7 @@ class ScraperClientTest {
             url = URI(wm.baseUrl()), apiKey = API_KEY,
             connectTimeout = Duration.ofSeconds(1), readTimeout = Duration.ofMillis(500),
         )
-        return ScraperClient(ScraperProperties(mercadona = store, alcampo = store, dia = store))
+        return ScraperClient(ScraperProperties(mercadona = store, alcampo = store, dia = store), Clock.systemUTC())
     }
 
     private fun search(term: String = "Leche entera") =
@@ -142,7 +143,7 @@ class ScraperClientTest {
     @Test
     fun `connection refused maps to unavailable`() {
         val store = ScraperProperties.Store(url = URI("http://localhost:1"), apiKey = API_KEY)
-        val client = ScraperClient(ScraperProperties(store, store, store))
+        val client = ScraperClient(ScraperProperties(store, store, store), Clock.systemUTC())
 
         assertIs<StoreSearchResult.Unavailable>(client.search(StoreName.DIA, SearchTerm.of("leche"), PostalCode.of("28001")))
     }

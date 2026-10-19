@@ -13,10 +13,14 @@ import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
 import java.math.BigDecimal
 import java.net.http.HttpClient
+import java.time.Clock
+import java.time.Duration
+import java.time.Instant
+import java.util.concurrent.ConcurrentHashMap
 
 /** HTTP adapter for the three scrapers' shared `GET /api/v1/products` contract (docs/architecture.md §2). */
 @Component
-class ScraperClient(properties: ScraperProperties) : StoreCatalogPort {
+class ScraperClient(properties: ScraperProperties, private val clock: Clock) : StoreCatalogPort {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -26,7 +30,47 @@ class ScraperClient(properties: ScraperProperties) : StoreCatalogPort {
         StoreName.DIA to restClient(properties.dia),
     )
 
+    private val warmupIdle: Duration = properties.warmupIdle
+
+    /** Last time each scraper was called (search or ping); in memory, so a restart pings everything once. */
+    private val lastContact = ConcurrentHashMap<StoreName, Instant>()
+
+    /**
+     * Pings `/health` in the background on every scraper idle for at least `warmupIdle`, so a sleeping
+     * Render free instance starts waking up before a search needs it (spec 001 RF-14). Never blocks.
+     */
+    fun wakeIdleScrapers() {
+        StoreName.entries.filter(::claimIfIdle).forEach { store ->
+            Thread.ofVirtual().name("scraper-warmup-${store.code}").start { ping(store) }
+        }
+    }
+
+    /** Atomically marks [store] as contacted now if it was idle, so concurrent searches ping it once. */
+    private fun claimIfIdle(store: StoreName): Boolean {
+        val now = clock.instant()
+        var claimed = false
+        lastContact.compute(store) { _, last ->
+            if (last == null || Duration.between(last, now) >= warmupIdle) {
+                claimed = true
+                now
+            } else {
+                last
+            }
+        }
+        return claimed
+    }
+
+    private fun ping(store: StoreName) {
+        try {
+            clients.getValue(store).get().uri("/health").retrieve().toBodilessEntity()
+            log.info("scraper warmup store={} outcome=ok", store.code)
+        } catch (e: RuntimeException) {
+            log.warn("scraper warmup store={} outcome=failed({})", store.code, e.javaClass.simpleName)
+        }
+    }
+
     override fun search(store: StoreName, term: SearchTerm, postalCode: PostalCode): StoreSearchResult {
+        lastContact[store] = clock.instant()
         val started = System.nanoTime()
         val result = try {
             clients.getValue(store).get()

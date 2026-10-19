@@ -46,7 +46,7 @@ Desglose de [plan.md](plan.md). Orden = orden de dependencia.
   Hecho cuando: tests WireMock de la tabla D8 y de la cabecera `X-API-Key`; la key no aparece en logs.
   Nota: `wiremock-standalone` 3.13.2 (shaded, sin conflicto con Jetty/Jackson de Boot). Verificado en los scrapers: ninguno devuelve "Page out of range" en la página 1, así que una búsqueda vacía llega como `200` con `products: []`.
 
-- [ ] **T8b — `ScraperWarmup`**
+- [x] **T8b — Warm-up (`ScraperClient.wakeIdleScrapers`)**
   Depende: T8. RF: RF-14.
   Hecho cuando: test WireMock: primera búsqueda → 1 `GET /health` por tienda; segunda búsqueda a los 5 min → 0; un `/health` lento no retrasa la respuesta.
 
