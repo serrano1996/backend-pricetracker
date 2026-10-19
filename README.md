@@ -10,6 +10,7 @@ Backend del comparador de precios de supermercados (Mercadona, Alcampo, Dia). Un
   - [001 — Búsqueda bajo demanda con persistencia](specs/001-backend-search-mvp/spec.md)
   - [002 — Request collapsing](specs/002-request-collapsing/spec.md)
   - [003 — Job nocturno de refresco](specs/003-smart-refresh-job/spec.md)
+  - [004 — Matching por tipo de producto](specs/004-product-type-matching/spec.md)
   - [005 — Endpoint de histórico de precios](specs/005-price-history-endpoint/spec.md)
 
 ## Arranque local
@@ -60,4 +61,4 @@ Necesita Docker: los tests de integración levantan PostgreSQL y Redis con Testc
 
 ## Estado
 
-Specs 001, 002, 003 y 005 completadas (001 verificada contra los scrapers reales). Pendiente en el roadmap: matching entre tiendas ([architecture.md §9](docs/architecture.md#9-roadmap-de-specs)).
+Specs 001–005 completadas (001 verificada contra los scrapers reales). Siguiente paso natural: despliegue ([architecture.md §7](docs/architecture.md#7-despliegue)).

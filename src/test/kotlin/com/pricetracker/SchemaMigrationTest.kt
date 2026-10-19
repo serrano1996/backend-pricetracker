@@ -51,6 +51,24 @@ class SchemaMigrationTest(@Autowired private val jdbc: JdbcTemplate) {
     }
 
     @Test
+    fun `seeds the initial product types with unit and match rules`() {
+        val types = jdbc.queryForList("select canonical_name, unit, array_to_string(match_all, ' ') as words from products")
+            .associate { it["canonical_name"] to "${it["unit"]}|${it["words"]}" }
+
+        assertEquals(11, types.size)
+        assertEquals("L|leche entera", types["Leche entera"])
+        assertEquals("L|aceite oliva virgen extra", types["Aceite de oliva virgen extra"])
+        assertEquals("kg|arroz bomba", types["Arroz bomba"])
+    }
+
+    @Test
+    fun `product type names are unique`() {
+        assertFailsWith<DataIntegrityViolationException> {
+            jdbc.update("insert into products (canonical_name, unit, match_all) values ('Leche entera', 'L', '{leche}')")
+        }
+    }
+
+    @Test
     fun `rejects malformed postal codes in metrics`() {
         assertFailsWith<DataIntegrityViolationException> {
             jdbc.update("insert into search_metrics (query_term, postal_code, last_searched_at) values ('leche', '2800', now())")

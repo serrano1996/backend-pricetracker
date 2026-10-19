@@ -15,6 +15,8 @@ import jakarta.persistence.ManyToMany
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.OrderColumn
 import jakarta.persistence.Table
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 import java.math.BigDecimal
 import java.time.Instant
 import java.util.UUID
@@ -35,7 +37,7 @@ class StoreProductEntity(
     var unitPrice: BigDecimal?,
     var unitPriceUnit: String?,
     var lastCheckedAt: Instant,
-    // Null until cross-store matching exists (future spec); no ProductEntity until then
+    // Product type (spec 004), recomputed on every refresh; null when no type matches
     var productId: UUID? = null,
     @Id @GeneratedValue(strategy = GenerationType.UUID) var id: UUID? = null,
 )
@@ -49,6 +51,18 @@ class PriceHistoryEntity(
     var unitPrice: BigDecimal?,
     var recordedAt: Instant,
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) var id: Long? = null,
+)
+
+/** A product type with its keyword rules (spec 004 RF-1). Created only by migrations. */
+@Entity
+@Table(name = "products")
+class ProductEntity(
+    var canonicalName: String,
+    var category: String?,
+    var unit: String,
+    @JdbcTypeCode(SqlTypes.ARRAY) var matchAll: List<String>,
+    @JdbcTypeCode(SqlTypes.ARRAY) var matchNone: List<String>,
+    @Id @GeneratedValue(strategy = GenerationType.UUID) var id: UUID? = null,
 )
 
 enum class SnapshotStatus(val code: String) { OK("ok"), NOT_SERVED("not_served") }

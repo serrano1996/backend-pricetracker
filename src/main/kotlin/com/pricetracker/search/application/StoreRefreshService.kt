@@ -20,12 +20,13 @@ import java.time.Clock
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-/** Persists one store's scraper answer: products, price history and the search snapshot (spec 001 RF-6, RF-7, RF-10). */
+/** Persists one store's scraper answer: products (with their type), price history and the search snapshot (spec 001 RF-6, RF-7, RF-10; spec 004). */
 @Service
 class StoreRefreshService(
     private val storeProducts: StoreProductRepository,
     private val priceHistory: PriceHistoryRepository,
     private val snapshots: SearchSnapshotRepository,
+    private val productTypes: ProductTypeCatalog,
     private val clock: Clock,
 ) {
 
@@ -68,6 +69,8 @@ class StoreRefreshService(
                 this.unitPrice = unitPrice?.amount
                 unitPriceUnit = unitPrice?.unit
                 lastCheckedAt = now
+                // Recomputed every time: name and unit can change (spec 004 RF-2, RF-3)
+                productId = productTypes.classifier.classify(offer.name, unitPrice?.unit)?.id
             }.let(storeProducts::save)
             if (changed) history += PriceHistoryEntity(saved, price, unitPrice?.amount, now)
             saved

@@ -101,6 +101,15 @@ class SearchControllerTest(
             jsonPath("$.stores[1].products") { isEmpty() }
             jsonPath("$.stores[2].status") { value("unavailable") }
             jsonPath("$.stores[2].fetched_at") { value(null) }
+            jsonPath("$.comparison.length()") { value(1) }
+            jsonPath("$.comparison[0].type") { value("Leche entera") }
+            jsonPath("$.comparison[0].unit") { value("L") }
+            jsonPath("$.comparison[0].offers.length()") { value(1) }
+            jsonPath("$.comparison[0].offers[0].store") { value("mercadona") }
+            jsonPath("$.comparison[0].offers[0].product_id") { isString() }
+            jsonPath("$.comparison[0].offers[0].name") { value("Leche entera") }
+            jsonPath("$.comparison[0].offers[0].unit_price") { value(0.95) }
+            jsonPath("$.comparison[0].offers[0].price") { value(0.95) }
         }
         assertEquals(1L, metricCount())
     }

@@ -31,6 +31,8 @@ data class ProductView(
     val unitPriceUnit: String?,
     val imageUrl: String?,
     val category: String?,
+    /** Product type (spec 004), null when none matched. */
+    val productTypeId: UUID?,
 )
 
 /** No store answered and none had data to fall back on; the web layer answers 502 (spec 001 RF-9). */

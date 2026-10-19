@@ -3,6 +3,7 @@ package com.pricetracker.search.web
 import com.pricetracker.search.application.ProductView
 import com.pricetracker.search.application.SearchResult
 import com.pricetracker.search.application.StoreResult
+import com.pricetracker.search.application.TypeComparison
 import tools.jackson.databind.PropertyNamingStrategies
 import tools.jackson.databind.annotation.JsonNaming
 import java.math.BigDecimal
@@ -12,15 +13,37 @@ import java.util.UUID
 // Public contract of GET /api/v1/search (spec 001 "Formato de respuesta"), snake_case like the scrapers.
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
-data class SearchResponse(val term: String, val postalCode: String, val stores: List<StoreResponse>) {
+data class SearchResponse(
+    val term: String,
+    val postalCode: String,
+    val stores: List<StoreResponse>,
+    val comparison: List<ComparisonResponse>,
+) {
     companion object {
-        fun from(result: SearchResult) = SearchResponse(
+        fun from(result: SearchResult, comparison: List<TypeComparison>) = SearchResponse(
             term = result.term.value,
             postalCode = result.postalCode.value,
             stores = result.stores.map(StoreResponse::from),
+            comparison = comparison.map(ComparisonResponse::from),
         )
     }
 }
+
+/** Cheapest offer per store for one product type, cheapest first (spec 004 RF-4). */
+data class ComparisonResponse(val type: String, val unit: String, val offers: List<OfferResponse>) {
+    companion object {
+        fun from(c: TypeComparison) = ComparisonResponse(
+            type = c.type.name,
+            unit = c.type.unit,
+            offers = c.offers.map {
+                OfferResponse(it.store.code, it.product.id, it.product.name, requireNotNull(it.product.unitPrice), it.product.price)
+            },
+        )
+    }
+}
+
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
+data class OfferResponse(val store: String, val productId: UUID, val name: String, val unitPrice: BigDecimal, val price: BigDecimal)
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
 data class StoreResponse(

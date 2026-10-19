@@ -113,7 +113,7 @@ class SearchService(
             ProductView(
                 id = requireNotNull(it.id), externalId = it.externalId, name = it.name, price = it.currentPrice,
                 priceFormat = it.priceFormat, unitPrice = it.unitPrice, unitPriceUnit = it.unitPriceUnit,
-                imageUrl = it.imageUrl, category = it.category,
+                imageUrl = it.imageUrl, category = it.category, productTypeId = it.productId,
             )
         },
     )

@@ -14,6 +14,7 @@ import jakarta.persistence.EntityManager
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.annotation.Import
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 import kotlin.test.Test
@@ -30,6 +31,7 @@ class StoreRefreshServiceTest(
     @Autowired private val priceHistory: PriceHistoryRepository,
     @Autowired private val snapshots: SearchSnapshotRepository,
     @Autowired private val em: EntityManager,
+    @Autowired private val jdbc: JdbcTemplate,
 ) {
     private val term = SearchTerm.of("leche")
     private val cp = PostalCode.of("28001")
@@ -129,6 +131,44 @@ class StoreRefreshServiceTest(
         assertEquals(StoreName.ALCAMPO, snapshot.storeName)
         assertEquals(SnapshotStatus.NOT_SERVED, snapshot.status)
         assertEquals(emptyList(), snapshot.items)
+    }
+
+    private fun typeOf(externalId: String): String? = jdbc.queryForList(
+        "select p.canonical_name from store_products s left join products p on p.id = s.product_id where s.external_id = ?",
+        String::class.java, externalId,
+    ).single()
+
+    @Test
+    fun `assigns product types to real product names (spec 004 edge cases)`() {
+        val expected = linkedMapOf(
+            StoreOffer("1", "CENTRAL LECHERA ASTURIANA Leche entera botella 6 x 1 l.", BigDecimal("7.56"), "1.26 €/L", "i", "c") to "Leche entera",
+            StoreOffer("2", "Leche semidesnatada Hacendado", BigDecimal("4.98"), "0.83 €/L", "i", "c") to "Leche semidesnatada",
+            StoreOffer("3", "Galletas cubiertas de chocolate con leche Galleteca de Dia 150 g", BigDecimal("1.20"), "8.00 €/kg", "i", "c") to null,
+            StoreOffer("4", "Leche desnatada sin lactosa Dia Láctea 1 L", BigDecimal("0.99"), "0.99 €/L", "i", "c") to null,
+            StoreOffer("5", "Aceite de oliva virgen extra en spray Carbonell 200 ml", BigDecimal("3.29"), "16.45 €/L", "i", "c") to null,
+            StoreOffer("6", "CARBONELL Aceite de oliva suave botella 1 l.", BigDecimal("5.24"), "5.24 €/L", "i", "c") to "Aceite de oliva",
+            StoreOffer("7", "Aceite de oliva virgen extra Carbonell 1 L", BigDecimal("7.69"), "7.69 €/L", "i", "c") to "Aceite de oliva virgen extra",
+            StoreOffer("8", "TILDA Arroz basmati integral 1 kg", BigDecimal("3.10"), "3.10 €/kg", "i", "c") to null,
+            StoreOffer("9", "1880 Polvorones de almendra con aceite de oliva y harina integral, vegan 310 g.", BigDecimal("3.00"), "9.68 €/kg", "i", "c") to null,
+            StoreOffer("10", "LA FALLERA Arroz redondo paquete de 1 kg.", BigDecimal("1.74"), "1.74 €/kg", "i", "c") to "Arroz redondo",
+            StoreOffer("11", "Aceite de girasol Koipe 1 L", BigDecimal("2.85"), null, "i", "c") to null, // no unit price
+        )
+
+        persist(*expected.keys.toTypedArray())
+
+        expected.forEach { (offer, type) -> assertEquals(type, typeOf(offer.externalId), offer.name) }
+    }
+
+    @Test
+    fun `product type is recomputed on every refresh`() {
+        persist(StoreOffer("1", "Leche entera Hacendado", BigDecimal("0.95"), "0.95 €/L", "i", "c"))
+        assertEquals("Leche entera", typeOf("1"))
+
+        persist(StoreOffer("1", "Leche entera sin lactosa Hacendado", BigDecimal("0.99"), "0.99 €/L", "i", "c"))
+        assertEquals(null, typeOf("1"))
+
+        persist(StoreOffer("1", "Leche semidesnatada Hacendado", BigDecimal("0.99"), "0.99 €/L", "i", "c"))
+        assertEquals("Leche semidesnatada", typeOf("1"))
     }
 
     @Test

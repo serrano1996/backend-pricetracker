@@ -50,7 +50,7 @@ Los tres exponen el mismo contrato, verificado en su código (`app/models/produc
 |---|---|---|
 | `store_products` único por `external_id` | Único por `(store_name, warehouse, external_id)` | El precio varía por almacén/región. |
 | Frescura por `last_checked_at` del producto | Tabla `search_snapshots` por `(término, código postal, tienda)` | Sin ella no se sabe si "leche" está fresca: un producto puede estar al día y la búsqueda no. |
-| `products` (catálogo unificado) obligatorio | `store_products.product_id` **nullable**; el matching entre tiendas es una spec futura | Unificar "Leche entera Hacendado 1L" con "Leche entera Alcampo 1L" es un problema propio (normalización/fuzzy matching). No bloquea el MVP. |
+| `products` (catálogo unificado) obligatorio | `products` son **tipos de producto** ("Leche entera · L") con reglas de palabras clave; `store_products.product_id` nullable | Sin EAN y con nombres distintos entre tiendas, el matching exacto apenas encuentra pares (casi todo es marca propia). Decisión del usuario: comparar equivalentes por tipo ([spec 004](../specs/004-product-type-matching/spec.md)). |
 | Histórico en cada refresco (§1) vs. solo en cambio (§5) | Solo cuando cambia el precio (o alta del producto) | 500 MB en Supabase free; un registro por refresco crece sin aportar información. |
 | `search_metrics.query_term` único | Único por `(query_term, postal_code)` | El job necesita saber para qué código postal refrescar. |
 | WebFlux + JPA | Spring MVC + virtual threads + `RestClient` | JPA es bloqueante; mezclarlo con WebFlux obliga a `subscribeOn(boundedElastic)` en todas partes. Con un executor de virtual threads, el paralelismo de 3 llamadas es código lineal. |
@@ -92,7 +92,7 @@ search_metrics (independiente)
 
 | Tabla | Clave / unicidad | Propósito |
 |---|---|---|
-| `products` | `id` UUID | Catálogo unificado (se rellena en la spec de matching). |
+| `products` | `id` UUID; único `canonical_name` | Tipos de producto con unidad y reglas `match_all` / `match_none` (spec 004). |
 | `store_products` | `id` UUID; único `(store_name, warehouse, external_id)` | Producto de una tienda en un almacén, con precio actual. |
 | `price_history` | `id` BIGINT identity | Un registro por alta o cambio de precio. |
 | `search_snapshots` | `id` UUID; único `(query_term, postal_code, store_name)` | Última vez que se trajo un término de una tienda y su estado. |
@@ -145,5 +145,5 @@ DDL completo: [specs/001-backend-search-mvp/plan.md](../specs/001-backend-search
 | [001-backend-search-mvp](../specs/001-backend-search-mvp/spec.md) | Búsqueda bajo demanda, persistencia, TTL, histórico, métricas. |
 | [002-request-collapsing](../specs/002-request-collapsing/spec.md) | Candado distribuido Redis por `(término, CP, tienda)`. |
 | [003-smart-refresh-job](../specs/003-smart-refresh-job/spec.md) | Job nocturno sobre los términos más buscados con jitter. |
-| 004 (futura) | Matching entre tiendas → `products`. |
+| [004-product-type-matching](../specs/004-product-type-matching/spec.md) | Tipos de producto y comparación por precio unitario en la búsqueda. |
 | [005-price-history-endpoint](../specs/005-price-history-endpoint/spec.md) | Endpoint de histórico de precios para gráficas. |

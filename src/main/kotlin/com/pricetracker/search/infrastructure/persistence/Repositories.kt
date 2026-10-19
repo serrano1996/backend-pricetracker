@@ -22,6 +22,8 @@ interface StoreProductRepository : JpaRepository<StoreProductEntity, UUID> {
     ): List<StoreProductEntity>
 }
 
+interface ProductRepository : JpaRepository<ProductEntity, UUID>
+
 interface PriceHistoryRepository : JpaRepository<PriceHistoryEntity, Long> {
     fun findByStoreProductIdOrderByRecordedAtAsc(storeProductId: UUID): List<PriceHistoryEntity>
 }
