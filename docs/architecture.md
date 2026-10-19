@@ -124,6 +124,7 @@ DDL completo: [specs/001-backend-search-mvp/plan.md](../specs/001-backend-search
 | `REFRESH_JOB_RECENCY` / `REFRESH_JOB_MIN_DELAY` / `REFRESH_JOB_MAX_DELAY` / `REFRESH_JOB_STORE_FAILURE_LIMIT` | `P30D` / `PT3S` / `PT10S` / `5` |
 | `SEARCH_FRESHNESS_TTL` | `PT12H` |
 | `LOCK_TTL` / `LOCK_POLL_INTERVAL` / `LOCK_WAIT_TIMEOUT` | `PT30S` / `PT0.25S` / `PT15S` (spec 002) |
+| `SCRAPER_CALL_BUDGET` / `SCRAPER_CALL_BUDGET_WINDOW` | `300` / `PT1H`: llamadas a scrapers por ventana, entre todas las instancias. Agotado, se sirve lo guardado. El job nocturno no lo consume. |
 | `CORS_ALLOWED_ORIGINS` | `https://<frontend>` |
 
 ## 8. Riesgos conocidos

@@ -43,6 +43,8 @@ pricetracker:
     lock-ttl: ${LOCK_TTL:PT30S}
     lock-poll-interval: ${LOCK_POLL_INTERVAL:PT0.25S}
     lock-wait-timeout: ${LOCK_WAIT_TIMEOUT:PT15S}
+    scraper-call-budget: ${SCRAPER_CALL_BUDGET:300}
+    scraper-call-budget-window: ${SCRAPER_CALL_BUDGET_WINDOW:PT1H}
   refresh-job:
     enabled: ${REFRESH_JOB_ENABLED:true}
     cron: ${REFRESH_JOB_CRON:0 0 4 * * *}

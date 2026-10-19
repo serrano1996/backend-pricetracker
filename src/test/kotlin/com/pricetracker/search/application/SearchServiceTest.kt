@@ -5,6 +5,7 @@ import com.pricetracker.config.SearchProperties
 import com.pricetracker.search.application.port.LockAttempt
 import com.pricetracker.search.application.port.LockToken
 import com.pricetracker.search.application.port.RefreshLockPort
+import com.pricetracker.search.application.port.ScraperCallBudgetPort
 import com.pricetracker.search.application.port.StoreCatalogPort
 import com.pricetracker.search.domain.PostalCode
 import com.pricetracker.search.domain.SearchTerm
@@ -46,8 +47,11 @@ class SearchServiceTest(
         lockPollInterval = Duration.ofMillis(50),
         lockWaitTimeout = Duration.ofSeconds(5),
     )
-    private fun service(locks: RefreshLockPort = redisLock, props: SearchProperties = properties) =
-        SearchService(catalog, snapshots, refresh, locks, props, Clock.systemUTC())
+    private fun service(
+        locks: RefreshLockPort = redisLock,
+        props: SearchProperties = properties,
+        budget: ScraperCallBudgetPort = ScraperCallBudgetPort { true },
+    ) = SearchService(catalog, snapshots, refresh, locks, budget, props, Clock.systemUTC())
     private val service by lazy { service() }
     private val term = SearchTerm.of("leche")
     private val cp = PostalCode.of("28001")
@@ -108,6 +112,35 @@ class SearchServiceTest(
         service.search(term, cp)
 
         assertEquals(listOf(StoreName.DIA), catalog.calls.toList())
+    }
+
+    @Test
+    fun `spends one budget unit per scraper call, none for fresh snapshots`() {
+        val spent = AtomicInteger()
+        val counted = service(budget = { spent.incrementAndGet(); true })
+
+        counted.search(term, cp)
+        counted.search(term, cp)
+
+        assertEquals(3, spent.get())
+    }
+
+    @Test
+    fun `exhausted budget serves old snapshots stale without calling scrapers`() {
+        service.search(term, cp)
+        ageSnapshots(13)
+        catalog.calls.clear()
+
+        val result = service(budget = { false }).search(term, cp)
+
+        assertEquals(0, catalog.calls.size)
+        assertTrue(result.stores.all { it.status == StoreStatus.OK && it.stale && it.products.size == 1 })
+    }
+
+    @Test
+    fun `exhausted budget with nothing stored fails the search without calling scrapers`() {
+        assertFailsWith<AllStoresUnavailableException> { service(budget = { false }).search(term, cp) }
+        assertEquals(0, catalog.calls.size)
     }
 
     @Test

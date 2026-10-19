@@ -13,4 +13,7 @@ data class SearchProperties(
     val lockPollInterval: Duration = Duration.ofMillis(250),
     /** How long a search waits on another's refresh before serving what it has (spec 002 RF-3, RF-4). */
     val lockWaitTimeout: Duration = Duration.ofSeconds(15),
+    /** Scraper calls allowed per window across all instances; past it, searches serve what is stored. */
+    val scraperCallBudget: Int = 300,
+    val scraperCallBudgetWindow: Duration = Duration.ofHours(1),
 )

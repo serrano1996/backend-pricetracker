@@ -42,7 +42,7 @@ class TopTermsRefresherTest(
     )
 
     private fun refresher(properties: RefreshJobProperties = props): TopTermsRefresher {
-        val search = SearchService(catalog, snapshots, refresh, locks, SearchProperties(), Clock.systemUTC())
+        val search = SearchService(catalog, snapshots, refresh, locks, { true }, SearchProperties(), Clock.systemUTC())
         return TopTermsRefresher(metrics, search, catalog, properties, Clock.systemUTC(), Random(42)) { sleeps += it }
     }
 
@@ -88,7 +88,7 @@ class TopTermsRefresherTest(
     @Test
     fun `skips stores whose snapshot is still fresh`() {
         searched("leche", 1)
-        SearchService(catalog, snapshots, refresh, locks, SearchProperties(), Clock.systemUTC())
+        SearchService(catalog, snapshots, refresh, locks, { true }, SearchProperties(), Clock.systemUTC())
             .search(SearchTerm.of("leche"), PostalCode.of("28001"))
         jdbc.update("update search_snapshots set fetched_at = fetched_at - interval '13 hours' where store_name = 'dia'")
         catalog.calls.clear()

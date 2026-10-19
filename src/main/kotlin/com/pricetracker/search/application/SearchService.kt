@@ -3,6 +3,7 @@ package com.pricetracker.search.application
 import com.pricetracker.config.SearchProperties
 import com.pricetracker.search.application.port.LockAttempt
 import com.pricetracker.search.application.port.RefreshLockPort
+import com.pricetracker.search.application.port.ScraperCallBudgetPort
 import com.pricetracker.search.application.port.StoreCatalogPort
 import com.pricetracker.search.domain.PostalCode
 import com.pricetracker.search.domain.SearchTerm
@@ -27,6 +28,7 @@ class SearchService(
     private val snapshots: SearchSnapshotRepository,
     private val refresh: StoreRefreshService,
     private val locks: RefreshLockPort,
+    private val budget: ScraperCallBudgetPort,
     private val properties: SearchProperties,
     private val clock: Clock,
 ) {
@@ -71,8 +73,12 @@ class SearchService(
         }
     }
 
-    private fun fetchAndPersist(store: StoreName, term: SearchTerm, postalCode: PostalCode, snapshot: SearchSnapshotEntity?): StoreResult =
-        when (val result = catalog.search(store, term, postalCode)) {
+    private fun fetchAndPersist(store: StoreName, term: SearchTerm, postalCode: PostalCode, snapshot: SearchSnapshotEntity?): StoreResult {
+        if (!budget.tryConsume()) {
+            log.warn("scraper call budget exhausted, serving stored store={} term={}", store.code, term.value)
+            return fallback(store, snapshot)
+        }
+        return when (val result = catalog.search(store, term, postalCode)) {
             is StoreSearchResult.Unavailable -> fallback(store, snapshot)
             else -> try {
                 view(refresh.persist(store, term, postalCode, result), stale = false)
@@ -82,6 +88,7 @@ class SearchService(
                 fallback(store, snapshot)
             }
         }
+    }
 
     /** Another search holds the lock: poll the snapshot instead of calling the scraper again (spec 002 RF-3, RF-4). */
     private fun awaitOthersRefresh(store: StoreName, term: SearchTerm, postalCode: PostalCode, snapshot: SearchSnapshotEntity?): StoreResult {

@@ -36,8 +36,9 @@ class RefreshJobConfig {
         clock: Clock,
     ): TopTermsRefreshJob {
         val catalog = ScraperClient(scrapers.withReadTimeout(properties.readTimeout), clock)
+        // No call budget: the job is already capped by top-n, and user traffic must not starve it
         val search = SearchService(
-            catalog, snapshots, refresh, locks,
+            catalog, snapshots, refresh, locks, { true },
             searchProperties.copy(lockTtl = properties.readTimeout.plusSeconds(10)), clock,
         )
         val refresher = TopTermsRefresher(metrics, search, catalog, properties, clock, Random.Default) { Thread.sleep(it) }
