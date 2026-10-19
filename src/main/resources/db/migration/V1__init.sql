@@ -22,6 +22,8 @@ create table store_products (
     current_price      numeric(10,2) not null,
     price_format       text,
     unit_price         numeric(10,2),
+    -- unit of unit_price after normalization (100 g -> kg, 100 ml -> L), so stores compare
+    unit_price_unit    text,
     last_checked_at    timestamptz   not null,
     created_at         timestamptz   not null default now(),
     -- prices differ per warehouse, so external_id alone is not unique

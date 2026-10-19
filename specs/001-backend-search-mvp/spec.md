@@ -61,6 +61,7 @@ Esta spec cubre la búsqueda bajo demanda (*lazy loading*): servir desde Postgre
           "price": 0.95,
           "price_format": "0,95 €/L",
           "unit_price": 0.95,
+          "unit_price_unit": "L",
           "image_url": "https://…",
           "category": "Leche y bebidas vegetales"
         }
@@ -76,7 +77,8 @@ Esta spec cubre la búsqueda bajo demanda (*lazy loading*): servir desde Postgre
 
 ## Casos límite
 
-- **`price_format` no parseable** (formato desconocido, `null`): `unit_price = null`, el producto se guarda igual.
+- **`price_format` no parseable** (formato desconocido, `null`): `unit_price` y `unit_price_unit` a `null`, el producto se guarda igual.
+- **Unidades por 100:** `"0.25 €/100 g"` se guarda como `unit_price = 2.50`, `unit_price_unit = "kg"` (y `100 ml` → `L`), para que el mismo producto sea comparable entre tiendas. `price_format` se devuelve sin cambios.
 - **Mismo producto en dos posiciones** de la respuesta del scraper: se guarda una vez; el snapshot conserva la primera posición.
 - **Producto que desaparece** de los resultados: se queda en `store_products` con su último precio; solo deja de estar en el snapshot.
 - **Dos búsquedas simultáneas** del mismo término sin snapshot: en esta spec ambas refrescan (resultado correcto, trabajo duplicado). Lo resuelve la spec 002.

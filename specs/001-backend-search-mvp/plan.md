@@ -94,9 +94,10 @@ RF: RF-7.
 **Descartado:** leer-modificar-guardar con JPA. Motivo: pierde incrementos con búsquedas concurrentes.
 RF: RF-11.
 
-### D7 — `UnitPriceParser` conservador
-**Elegido:** extraer el primer número de `price_format` (admite `,` y `.` decimal) solo si el texto contiene `€/`; en cualquier otro caso `null`.
-**Descartado:** intentar normalizar unidades (`€/100 g` → `€/kg`). Motivo: cada tienda usa formatos distintos y hoy no hay muestras suficientes; se amplía cuando haya fixtures reales.
+### D7 — `UnitPriceParser` con normalización de unidades por 100
+**Hecho verificado (T5):** los tres scrapers construyen `price_format` igual: `f"{importe} €/{unidad}"`, con punto decimal. Unidades vistas en sus mappers: `L`, `kg`, `ud`, `docena`, `lavado`, `100 ml`, `100 g` (Mercadona usa su `reference_format`).
+**Elegido:** `parse(text) → UnitPrice(amount, unit)?`; `100 g` → `kg` y `100 ml` → `L` multiplicando por 10; el resto de unidades tal cual; formato no reconocido → `null`. Se guarda en `unit_price` + `unit_price_unit`.
+**Descartado:** guardar solo el número. Motivo: 0,25 €/100 g y 2,50 €/kg son el mismo precio y sin unidad no se pueden comparar.
 RF: caso límite "price_format no parseable".
 
 ### D7b — Warm-up sin bloquear

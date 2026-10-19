@@ -22,15 +22,15 @@ Desglose de [plan.md](plan.md). Orden = orden de dependencia.
 
 ## Dominio
 
-- [ ] **T4 — `SearchTerm` y `PostalCode`**
+- [x] **T4 — `SearchTerm` y `PostalCode`**
   Depende: T1. RF: RF-2, RF-3.
   Hecho cuando: tests de normalización (`" Leche  Entera "` → `"leche entera"`), vacío, 101 caracteres, CP `2800`, `28001`, dígitos Unicode no ASCII.
 
-- [ ] **T5 — `UnitPriceParser`**
+- [x] **T5 — `UnitPriceParser`**
   Depende: T1. RF: caso límite.
-  Hecho cuando: tests con `"1.05 €/L"`, `"0,95 €/L"`, `"2,10 €/kg"`, `null`, `"oferta"`.
+  Hecho cuando: tests con `"1.05 €/L"`, `"0,95 €/L"`, `"2,10 €/kg"`, `"0.25 €/100 g"` → 2.50 €/kg, `null`, `"oferta"`. Añade `store_products.unit_price_unit` a V1 (aún no desplegada).
 
-- [ ] **T6 — `StoreName`, `StoreOffer`, `StoreSearchResult`**
+- [x] **T6 — `StoreName`, `StoreOffer`, `StoreSearchResult`**
   Depende: T1. RF: RF-1, RF-8, RF-10.
   Hecho cuando: compila y el orden del enum es mercadona, alcampo, dia.
 
