@@ -22,3 +22,9 @@ Desglose de [plan.md](plan.md). Requiere la spec 001 completada.
 ## Resultado (2026-10-19)
 
 `./gradlew build` en verde (113 tests). RED observado en cada tarea (columnas inexistentes, clasificador inexistente, `product_id` nulo, `comparison` ausente). Los 11 casos límite de la spec, con nombres reales de T13, se clasifican como se especificó. No verificado contra scrapers reales: los productos guardados antes de V2 siguen sin tipo hasta su próximo refresco.
+
+### Verificación con datos reales (2026-10-19, CP 28001, BD local)
+
+`leche`, `aceite`, `arroz` refrescados contra los scrapers de Render: 175 de 398 productos con tipo (Alcampo 79/100, Dia 51/149, Mercadona 45/149); el resto son otros productos (atún en aceite, sin lactosa…) o promociones de Dia sin precio unitario. `comparison` devolvió 11 tipos, p. ej. *Arroz redondo*: Alcampo 1,05 €/kg, Mercadona 1,15, Dia 1,88.
+
+Revisión manual de los tipos con más productos: 2 falsos positivos en *Arroz redondo* (`Vasos de arroz redondo…`, `Arroz cocido redondo…`) → corregidos en `V3__rice_type_exclusions.sql` y fijados como casos de test; verificado de nuevo con datos reales.

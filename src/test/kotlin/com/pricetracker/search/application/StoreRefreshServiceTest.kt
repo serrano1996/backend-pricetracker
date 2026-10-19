@@ -152,6 +152,9 @@ class StoreRefreshServiceTest(
             StoreOffer("9", "1880 Polvorones de almendra con aceite de oliva y harina integral, vegan 310 g.", BigDecimal("3.00"), "9.68 €/kg", "i", "c") to null,
             StoreOffer("10", "LA FALLERA Arroz redondo paquete de 1 kg.", BigDecimal("1.74"), "1.74 €/kg", "i", "c") to "Arroz redondo",
             StoreOffer("11", "Aceite de girasol Koipe 1 L", BigDecimal("2.85"), null, "i", "c") to null, // no unit price
+            // False positives found with real data after V2, fixed in V3
+            StoreOffer("12", "Vasos de arroz redondo Brillante 2 x 200 g", BigDecimal("1.99"), "4.98 €/kg", "i", "c") to null,
+            StoreOffer("13", "Arroz cocido redondo Sabroz", BigDecimal("1.60"), "4.00 €/kg", "i", "c") to null,
         )
 
         persist(*expected.keys.toTypedArray())
