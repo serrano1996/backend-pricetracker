@@ -23,6 +23,9 @@ spring:
   data:
     redis:
       url: ${REDIS_URL:redis://localhost:6379}
+      # Lettuce waits 60 s by default: with Redis down every search would hang that long (spec 002 RF-5)
+      timeout: 2s
+      connect-timeout: 2s
 
 management:
   endpoints:
@@ -37,6 +40,9 @@ management:
 pricetracker:
   search:
     freshness-ttl: ${SEARCH_FRESHNESS_TTL:PT12H}
+    lock-ttl: ${LOCK_TTL:PT30S}
+    lock-poll-interval: ${LOCK_POLL_INTERVAL:PT0.25S}
+    lock-wait-timeout: ${LOCK_WAIT_TIMEOUT:PT15S}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
   scrapers:

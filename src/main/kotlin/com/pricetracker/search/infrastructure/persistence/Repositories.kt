@@ -2,12 +2,16 @@ package com.pricetracker.search.infrastructure.persistence
 
 import com.pricetracker.search.domain.StoreName
 import org.springframework.data.jpa.repository.EntityGraph
+import jakarta.persistence.LockModeType
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Lock
 import java.util.UUID
 
 // Query methods are added by the task that first needs them (T9, T10, T11).
 
 interface StoreProductRepository : JpaRepository<StoreProductEntity, UUID> {
+    // SELECT ... FOR UPDATE: concurrent refreshes compare prices one after another, so history is never duplicated (spec 002 RF-7)
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     fun findByStoreNameAndWarehouseAndExternalIdIn(
         storeName: StoreName,
         warehouse: String,

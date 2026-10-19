@@ -2,6 +2,9 @@ package com.pricetracker.search.application
 
 import com.pricetracker.TestcontainersConfiguration
 import com.pricetracker.config.SearchProperties
+import com.pricetracker.search.application.port.LockAttempt
+import com.pricetracker.search.application.port.LockToken
+import com.pricetracker.search.application.port.RefreshLockPort
 import com.pricetracker.search.application.port.StoreCatalogPort
 import com.pricetracker.search.domain.PostalCode
 import com.pricetracker.search.domain.SearchTerm
@@ -34,6 +37,7 @@ class SearchServiceTest(
     @Autowired private val refresh: StoreRefreshService,
     @Autowired private val snapshots: SearchSnapshotRepository,
     @Autowired private val jdbc: JdbcTemplate,
+    @Autowired private val redisLock: RefreshLockPort,
 ) {
     private class FakeCatalog : StoreCatalogPort {
         val responses = ConcurrentHashMap<StoreName, StoreSearchResult>()
@@ -56,9 +60,15 @@ class SearchServiceTest(
     }
 
     private val catalog = FakeCatalog()
-    private val service by lazy {
-        SearchService(catalog, snapshots, refresh, SearchProperties(freshnessTtl = Duration.ofHours(12)), Clock.systemUTC())
-    }
+    private val properties = SearchProperties(
+        freshnessTtl = Duration.ofHours(12),
+        lockTtl = Duration.ofSeconds(30),
+        lockPollInterval = Duration.ofMillis(50),
+        lockWaitTimeout = Duration.ofSeconds(5),
+    )
+    private fun service(locks: RefreshLockPort = redisLock, props: SearchProperties = properties) =
+        SearchService(catalog, snapshots, refresh, locks, props, Clock.systemUTC())
+    private val service by lazy { service() }
     private val term = SearchTerm.of("leche")
     private val cp = PostalCode.of("28001")
 
@@ -174,5 +184,68 @@ class SearchServiceTest(
         val elapsed = Duration.ofNanos(System.nanoTime() - started)
 
         assertTrue(elapsed < Duration.ofSeconds(2), "took $elapsed")
+    }
+
+    @Test
+    fun `concurrent searches of a stale term call each scraper once`() {
+        catalog.delay = Duration.ofMillis(500)
+
+        val results = (1..20).map { Thread.ofVirtual().start { service.search(term, cp) } }
+        results.forEach { it.join() }
+
+        assertEquals(mapOf(StoreName.MERCADONA to 1, StoreName.ALCAMPO to 1, StoreName.DIA to 1), catalog.calls.groupingBy { it }.eachCount())
+    }
+
+    @Test
+    fun `waiters see the holder's fresh data`() {
+        catalog.delay = Duration.ofMillis(300)
+        val results = java.util.concurrent.ConcurrentLinkedQueue<SearchResult>()
+
+        (1..5).map { Thread.ofVirtual().start { results += service.search(term, cp) } }.forEach { it.join() }
+
+        assertTrue(results.all { r -> r.stores.all { it.status == StoreStatus.OK && !it.stale && it.products.size == 1 } })
+    }
+
+    @Test
+    fun `when the wait times out the old snapshot is served stale without calling the scraper`() {
+        service.search(term, cp)
+        ageSnapshots(13)
+        catalog.calls.clear()
+        val held = redisLock.tryAcquire("pt:lock:refresh:dia:28001:leche", Duration.ofSeconds(30)) as LockAttempt.Acquired
+        try {
+            val result = service(props = properties.copy(lockWaitTimeout = Duration.ofMillis(300))).search(term, cp)
+
+            assertTrue(result.stores[2].stale)
+            assertEquals(StoreStatus.OK, result.stores[2].status)
+            assertEquals(setOf(StoreName.MERCADONA, StoreName.ALCAMPO), catalog.calls.toSet())
+        } finally {
+            redisLock.release(held.token)
+        }
+    }
+
+    @Test
+    fun `refreshes without the lock when redis is unavailable`() {
+        val downLock = object : RefreshLockPort {
+            override fun tryAcquire(key: String, ttl: Duration) = LockAttempt.Unavailable
+            override fun release(token: LockToken) = error("nothing to release")
+        }
+
+        val result = service(locks = downLock).search(term, cp)
+
+        assertTrue(result.stores.all { it.status == StoreStatus.OK })
+        assertEquals(3, catalog.calls.size)
+    }
+
+    @Test
+    fun `the lock is released after a refresh, even a failed one`() {
+        catalog.responses[StoreName.ALCAMPO] = StoreSearchResult.Unavailable("HTTP 502")
+
+        service.search(term, cp)
+
+        StoreName.entries.forEach { store ->
+            val attempt = redisLock.tryAcquire("pt:lock:refresh:${store.code}:28001:leche", Duration.ofSeconds(1))
+            assertTrue(attempt is LockAttempt.Acquired, "$store still locked")
+            redisLock.release(attempt.token)
+        }
     }
 }
