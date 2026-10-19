@@ -15,7 +15,7 @@ Desglose de [plan.md](plan.md). Orden = orden de dependencia.
   Depende: T1. RF: RF-12, RF-13.
   Hecho cuando: test de binding de `ScraperProperties`; `/actuator/health` responde 200 sin detalles.
 
-- [ ] **T3 — Migración `V1__init.sql`**
+- [x] **T3 — Migración `V1__init.sql`**
   DDL de plan.md §2.
   Depende: T1. RF: RF-6, RF-7, RF-10, RF-11.
   Hecho cuando: test con Testcontainers arranca la app con `ddl-auto=validate` sin errores.

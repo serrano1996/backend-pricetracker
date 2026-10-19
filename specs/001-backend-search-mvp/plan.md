@@ -53,71 +53,11 @@ Cobertura por RF:
 
 ## 2. Modelo de datos
 
-`V1__init.sql`:
+Fuente de verdad: [`V1__init.sql`](../../src/main/resources/db/migration/V1__init.sql) (+ [`afterMigrate.sql`](../../src/main/resources/db/migration/afterMigrate.sql)). Resumen de decisiones aplicadas (guía de buenas prácticas de Postgres de Supabase):
 
-```sql
-CREATE TABLE products (
-    id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    canonical_name VARCHAR(255) NOT NULL,
-    category       VARCHAR(255),
-    image_url      TEXT,
-    created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE TABLE store_products (
-    id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    product_id         UUID REFERENCES products(id),          -- NULL hasta la spec de matching
-    store_name         VARCHAR(20)  NOT NULL CHECK (store_name IN ('mercadona','alcampo','dia')),
-    warehouse          VARCHAR(50)  NOT NULL,
-    external_id        VARCHAR(100) NOT NULL,
-    store_product_name VARCHAR(255) NOT NULL,
-    category           VARCHAR(255),
-    image_url          TEXT,
-    current_price      NUMERIC(10,2) NOT NULL,
-    price_format       VARCHAR(100),
-    unit_price         NUMERIC(10,2),
-    last_checked_at    TIMESTAMPTZ NOT NULL,
-    created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE (store_name, warehouse, external_id)
-);
-
-CREATE TABLE price_history (
-    id               BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    store_product_id UUID NOT NULL REFERENCES store_products(id) ON DELETE CASCADE,
-    price            NUMERIC(10,2) NOT NULL,
-    unit_price       NUMERIC(10,2),
-    recorded_at      TIMESTAMPTZ NOT NULL
-);
-CREATE INDEX idx_price_history_product_time ON price_history (store_product_id, recorded_at DESC);
-
-CREATE TABLE search_snapshots (
-    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    query_term  VARCHAR(100) NOT NULL,
-    postal_code CHAR(5)      NOT NULL,
-    store_name  VARCHAR(20)  NOT NULL,
-    status      VARCHAR(20)  NOT NULL CHECK (status IN ('ok','not_served')),
-    fetched_at  TIMESTAMPTZ  NOT NULL,
-    UNIQUE (query_term, postal_code, store_name)
-);
-
-CREATE TABLE search_snapshot_items (
-    snapshot_id      UUID NOT NULL REFERENCES search_snapshots(id) ON DELETE CASCADE,
-    position         INT  NOT NULL,
-    store_product_id UUID NOT NULL REFERENCES store_products(id) ON DELETE CASCADE,
-    PRIMARY KEY (snapshot_id, position)
-);
-
-CREATE TABLE search_metrics (
-    id               BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    query_term       VARCHAR(100) NOT NULL,
-    postal_code      CHAR(5)      NOT NULL,
-    search_count     BIGINT       NOT NULL DEFAULT 0,
-    last_searched_at TIMESTAMPTZ  NOT NULL,
-    UNIQUE (query_term, postal_code)
-);
-CREATE INDEX idx_search_metrics_rank ON search_metrics (search_count DESC, last_searched_at DESC);
-```
+- `text` en lugar de `varchar(n)`; los límites que importan son `check` (`store_name`, `status`, longitud del término, `postal_code ~ '^[0-9]{5}$'`).
+- Índice en cada clave foránea que no lo tiene ya por PK o índice compuesto (`store_products.product_id`, `search_snapshot_items.store_product_id`).
+- RLS activado sin políticas en todas las tablas, incluida `flyway_schema_history`: Supabase expone `public` por su Data API con la clave anónima; el backend conecta como propietario y no le afecta. La de Flyway va en `afterMigrate.sql` porque dentro de una migración el `ALTER` queda bloqueado para siempre por el propio lock de Flyway.
 
 `unavailable` no se persiste: un fallo no debe pisar el último snapshot bueno (RF-8).
 
