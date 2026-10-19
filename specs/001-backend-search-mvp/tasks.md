@@ -36,8 +36,8 @@ Desglose de [plan.md](plan.md). Orden = orden de dependencia.
 
 ## Infraestructura
 
-- [ ] **T7 — Entidades JPA y repositorios**
-  `StoreProductEntity`, `PriceHistoryEntity`, `SearchSnapshotEntity` (+ ítems), `SearchMetricEntity`, `ProductEntity`.
+- [x] **T7 — Entidades JPA y repositorios**
+  `StoreProductEntity`, `PriceHistoryEntity`, `SearchSnapshotEntity` (+ ítems como lista ordenada `@OrderColumn`), `SearchMetricEntity`. `ProductEntity` se aplaza a la spec de matching (nada la usa; `product_id` queda como columna UUID). Los métodos de consulta se añaden en la tarea que los usa.
   Depende: T3. RF: RF-6, RF-7.
   Hecho cuando: test de repositorio guarda y lee un `store_product` con su histórico.
 
