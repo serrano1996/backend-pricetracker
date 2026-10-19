@@ -146,4 +146,4 @@ DDL completo: [specs/001-backend-search-mvp/plan.md](../specs/001-backend-search
 | [002-request-collapsing](../specs/002-request-collapsing/spec.md) | Candado distribuido Redis por `(término, CP, tienda)`. |
 | [003-smart-refresh-job](../specs/003-smart-refresh-job/spec.md) | Job nocturno sobre los términos más buscados con jitter. |
 | 004 (futura) | Matching entre tiendas → `products`. |
-| 005 (futura) | Endpoint de histórico de precios para gráficas. |
+| [005-price-history-endpoint](../specs/005-price-history-endpoint/spec.md) | Endpoint de histórico de precios para gráficas. |

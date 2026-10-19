@@ -22,7 +22,9 @@ interface StoreProductRepository : JpaRepository<StoreProductEntity, UUID> {
     ): List<StoreProductEntity>
 }
 
-interface PriceHistoryRepository : JpaRepository<PriceHistoryEntity, Long>
+interface PriceHistoryRepository : JpaRepository<PriceHistoryEntity, Long> {
+    fun findByStoreProductIdOrderByRecordedAtAsc(storeProductId: UUID): List<PriceHistoryEntity>
+}
 
 interface SearchSnapshotRepository : JpaRepository<SearchSnapshotEntity, UUID> {
     // Items fetched in the same query: callers read them outside any transaction (open-in-view is off)
