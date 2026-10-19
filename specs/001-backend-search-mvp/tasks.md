@@ -62,9 +62,10 @@ Desglose de [plan.md](plan.md). Orden = orden de dependencia.
   Depende: T8, T9. RF: RF-1, RF-4, RF-5, RF-8, RF-9.
   Hecho cuando: tests con `Clock` fijo: fresco → 0 llamadas; 13 h después → 1 llamada por tienda; una tienda caída con snapshot → `stale: true`; sin snapshot → `unavailable`; tres caídas sin datos → excepción mapeada a 502; latencia paralela < 2 s con retardos de 1 s.
 
-- [ ] **T11 — `SearchMetricRecorder`**
+- [x] **T11 — `SearchMetricRecorder`**
   Depende: T7. RF: RF-11.
   Hecho cuando: 20 hilos concurrentes → `search_count == 20`; fallo de BD simulado → la búsqueda responde y hay warning.
+  Nota: upsert con `JdbcTemplate` (autocommit, sin transacción explícita). Se invoca desde `SearchController` (T12), no desde `SearchService`, para que el job de la spec 003 no cuente como búsqueda.
 
 ## Web
 
