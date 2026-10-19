@@ -69,7 +69,7 @@ Desglose de [plan.md](plan.md). Orden = orden de dependencia.
 
 ## Web
 
-- [ ] **T12 — `SearchController` + DTOs + `ApiExceptionHandler`**
+- [x] **T12 — `SearchController` + DTOs + `ApiExceptionHandler`**
   Depende: T10, T11. RF: RF-1, RF-2, RF-9.
   Hecho cuando: test de integración end-to-end (Testcontainers + WireMock) devuelve el JSON de la spec; 400 con CP inválido sin llamadas a WireMock; CORS rechaza un origen no permitido.
 
