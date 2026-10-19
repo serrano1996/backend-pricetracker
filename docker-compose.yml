@@ -1,0 +1,29 @@
+# Local infrastructure only. The backend runs from the IDE / ./gradlew bootRun;
+# scrapers are reached through SCRAPER_*_URL (local containers or Render).
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: pricetracker
+      POSTGRES_USER: pricetracker
+      POSTGRES_PASSWORD: pricetracker
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pricetracker -d pricetracker"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  pgdata:
