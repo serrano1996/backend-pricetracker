@@ -4,6 +4,7 @@ import com.pricetracker.search.application.AllStoresUnavailableException
 import com.pricetracker.search.application.SearchService
 import com.pricetracker.search.application.StoreStatus
 import com.pricetracker.search.application.port.StoreCatalogPort
+import com.pricetracker.search.domain.InvalidSearchQueryException
 import com.pricetracker.search.domain.PostalCode
 import com.pricetracker.search.domain.SearchTerm
 import com.pricetracker.search.domain.StoreName
@@ -56,11 +57,17 @@ class TopTermsRefresher(
         for ((index, metric) in pairs.withIndex()) {
             val active = StoreName.entries.filter { consecutiveFailures.getValue(it) < properties.storeFailureLimit }.toSet()
             if (active.isEmpty()) break
+            // Recorded before the term rules tightened: not worth a scraper call
+            val term = try {
+                SearchTerm.of(metric.queryTerm)
+            } catch (e: InvalidSearchQueryException) {
+                continue
+            }
             if (index > 0) sleeper.sleep(jitter())
 
             val pairStarted = clock.instant()
             val result = try {
-                search.search(SearchTerm.of(metric.queryTerm), PostalCode.of(metric.postalCode), active)
+                search.search(term, PostalCode.of(metric.postalCode), active)
             } catch (e: AllStoresUnavailableException) {
                 null
             }

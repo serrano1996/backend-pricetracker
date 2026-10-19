@@ -21,8 +21,21 @@ value class SearchTerm private constructor(val value: String) {
             if (length !in 1..MAX_LENGTH) {
                 throw InvalidSearchQueryException("term must be 1 to $MAX_LENGTH characters")
             }
+            // Nonsense terms never reach a scraper: each one costs a call that cannot be served from cache
+            if (!ALLOWED.matches(normalized)) throw InvalidSearchQueryException("term contains unsupported characters")
+            if (LETTER.findAll(normalized).take(2).count() < 2) throw InvalidSearchQueryException("term must contain at least 2 letters")
+            if (REPEATED.containsMatchIn(normalized) || CONSONANT_RUN.containsMatchIn(normalized)) {
+                throw InvalidSearchQueryException("term does not look like a product")
+            }
             return SearchTerm(normalized)
         }
+
+        // Letters (any script, with accents), digits, spaces and the punctuation found in product names
+        private val ALLOWED = Regex("[\\p{L}\\p{M}\\p{Nd} .,'&%/+-]+")
+        private val LETTER = Regex("\\p{L}")
+        private val REPEATED = Regex("(.)\\1{3,}")
+        // 'y' counts as a vowel ("rhythm"); Spanish and brand names stay under 5 in a row ("schweppes", "construcción")
+        private val CONSONANT_RUN = Regex("[bcdfghjklmnñpqrstvwxzç]{5,}")
     }
 }
 

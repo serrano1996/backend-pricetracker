@@ -21,6 +21,7 @@ Esta spec cubre la búsqueda bajo demanda (*lazy loading*): servir desde Postgre
 
 - **RF-1:** CUANDO el cliente envíe `GET /api/v1/search?term=leche&postal_code=28001`, EL SISTEMA responderá `200 OK` con los resultados agrupados por tienda (`mercadona`, `alcampo`, `dia`), siempre las tres y en ese orden.
 - **RF-2:** SI `postal_code` no cumple `^[0-9]{5}$` o `term` queda vacío o supera 100 caracteres tras recortar espacios, ENTONCES EL SISTEMA responderá `400 Bad Request` sin llamar a ningún scraper. (Mismas reglas que los scrapers.)
+  - *Ampliado (2026-10-19):* también `400` si `term` contiene caracteres fuera de letras, dígitos, espacios y `. , ' & % / + -`; tiene menos de 2 letras; repite un carácter 4 o más veces seguidas; o encadena 5 o más consonantes. Evita que búsquedas sin sentido gasten llamadas a scrapers.
 - **RF-3:** EL SISTEMA normalizará el término (recortar, minúsculas, colapsar espacios internos) y usará el término normalizado como clave de frescura y de métricas. `" Leche  Entera "` y `"leche entera"` son la misma búsqueda.
 - **RF-4:** CUANDO exista un snapshot de `(término, código postal, tienda)` con `fetched_at` de hace menos de `SEARCH_FRESHNESS_TTL` (por defecto 12 h), EL SISTEMA servirá esa tienda desde PostgreSQL sin llamar a su scraper.
 - **RF-5:** CUANDO falte el snapshot o esté obsoleto, EL SISTEMA llamará al scraper de esa tienda (página 1, `page_size` 50). Las tiendas que necesiten refresco se consultan **en paralelo**; la latencia total es la de la más lenta, no la suma.

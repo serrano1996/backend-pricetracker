@@ -126,6 +126,17 @@ class TopTermsRefresherTest(
     }
 
     @Test
+    fun `skips stored terms that today's rules reject and refreshes the rest`() {
+        searched("!!", 9)
+        searched("leche", 5)
+
+        val summary = refresher().run()
+
+        assertEquals(listOf("leche"), termsCalled())
+        assertEquals(3, summary.refreshed)
+    }
+
+    @Test
     fun `does not count as user searches`() {
         searched("leche", 7)
 

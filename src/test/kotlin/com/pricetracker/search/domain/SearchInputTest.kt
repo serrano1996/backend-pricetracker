@@ -25,14 +25,32 @@ class SearchInputTest {
 
     @Test
     fun `accepts 100 characters and rejects 101 after normalization`() {
-        assertEquals(100, SearchTerm.of(" " + "a".repeat(100) + " ").value.length)
-        assertFailsWith<InvalidSearchQueryException> { SearchTerm.of("a".repeat(101)) }
+        assertEquals(100, SearchTerm.of(" " + "ab".repeat(50) + " ").value.length)
+        assertFailsWith<InvalidSearchQueryException> { SearchTerm.of("ab".repeat(50) + "a") }
     }
 
     @Test
     fun `counts code points, not UTF-16 units, like the database check`() {
-        val emoji = "🥛" // glass of milk, 2 UTF-16 units
-        assertEquals(100, SearchTerm.of(emoji.repeat(100)).value.codePointCount(0, 200))
+        val letters = "𝒜𝒷" // mathematical script letters, 2 UTF-16 units each
+        assertEquals(100, SearchTerm.of(letters.repeat(50)).value.codePointCount(0, 200))
+    }
+
+    @Test
+    fun `accepts real grocery terms`() {
+        listOf(
+            "leche", "té", "7up", "coca-cola 2l", "aceite de oliva 0,4%", "m&m's", "schweppes", "construcción",
+            "rhythm", "xxl", "café molido 250 g", "ñoquis", "agua 1.5/l", "zumo + fibra",
+        ).forEach { SearchTerm.of(it) }
+    }
+
+    @Test
+    fun `rejects nonsense terms before they reach any scraper`() {
+        listOf(
+            "a", "1", "12345", "!!", "🥛🥛", "<script>", "leche;drop", "http://x.com", "aaaa", "lecheeee",
+            "qwrtzp", "xkcdbbq",
+        ).forEach { raw ->
+            assertFailsWith<InvalidSearchQueryException>(raw) { SearchTerm.of(raw) }
+        }
     }
 
     @Test
