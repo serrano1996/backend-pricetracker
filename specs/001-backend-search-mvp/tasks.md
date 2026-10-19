@@ -52,7 +52,7 @@ Desglose de [plan.md](plan.md). Orden = orden de dependencia.
 
 ## Aplicación
 
-- [ ] **T9 — `StoreRefreshService`**
+- [x] **T9 — `StoreRefreshService`**
   Upsert por `(store, warehouse, external_id)`, histórico en alta/cambio, reemplazo de ítems del snapshot, redondeo HALF_UP.
   Depende: T5, T7. RF: RF-6, RF-7, RF-10.
   Hecho cuando: tests: alta → 1 histórico; mismo precio → 0; precio distinto → 1 más; duplicado en respuesta → una fila; lista vacía → snapshot fresco vacío.
