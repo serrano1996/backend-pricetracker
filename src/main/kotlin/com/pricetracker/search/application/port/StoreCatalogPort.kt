@@ -11,4 +11,7 @@ interface StoreCatalogPort {
 
     /** Starts waking up scrapers that have been idle, without blocking (spec 001 RF-14). */
     fun wakeIdleScrapers()
+
+    /** Pings one scraper and waits for it; true if it answered within its read timeout (spec 003 RF-10). */
+    fun wakeAndWait(store: StoreName): Boolean
 }

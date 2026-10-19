@@ -39,26 +39,6 @@ class SearchServiceTest(
     @Autowired private val jdbc: JdbcTemplate,
     @Autowired private val redisLock: RefreshLockPort,
 ) {
-    private class FakeCatalog : StoreCatalogPort {
-        val responses = ConcurrentHashMap<StoreName, StoreSearchResult>()
-        val calls = ConcurrentLinkedQueue<StoreName>()
-        val wakeups = AtomicInteger()
-        var delay: Duration = Duration.ZERO
-
-        override fun search(store: StoreName, term: SearchTerm, postalCode: PostalCode): StoreSearchResult {
-            calls += store
-            Thread.sleep(delay)
-            return responses[store] ?: StoreSearchResult.Found(
-                "w-${store.code}",
-                listOf(StoreOffer("${store.code}-1", "Leche ${store.code}", BigDecimal("0.95"), "0.95 €/L", "https://img", "Leche")),
-            )
-        }
-
-        override fun wakeIdleScrapers() {
-            wakeups.incrementAndGet()
-        }
-    }
-
     private val catalog = FakeCatalog()
     private val properties = SearchProperties(
         freshnessTtl = Duration.ofHours(12),

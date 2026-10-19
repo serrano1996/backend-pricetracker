@@ -102,6 +102,29 @@ class ScraperWarmupTest {
     }
 
     @Test
+    fun `wake and wait blocks until the scraper answers and counts as contact`() {
+        mercadona.stubFor(get(urlPathEqualTo("/health")).willReturn(ok().withFixedDelay(300)))
+        val client = client()
+
+        kotlin.test.assertTrue(client.wakeAndWait(StoreName.MERCADONA))
+
+        awaitPings(mercadona to 1)
+        client.wakeIdleScrapers() // mercadona was just contacted: only the other two are pinged
+        awaitPings(mercadona to 1, alcampo to 1, dia to 1)
+    }
+
+    @Test
+    fun `wake and wait reports a scraper that does not answer in time`() {
+        dia.stubFor(get(urlPathEqualTo("/health")).willReturn(ok().withFixedDelay(1500)))
+        fun store(wm: WireMockExtension) =
+            ScraperProperties.Store(url = URI(wm.baseUrl()), apiKey = "k", readTimeout = Duration.ofMillis(500))
+        val client = ScraperClient(ScraperProperties(store(mercadona), store(alcampo), store(dia)), clock)
+
+        kotlin.test.assertFalse(client.wakeAndWait(StoreName.DIA))
+        Thread.sleep(1200) // let the delayed request finish before the next test resets the journal
+    }
+
+    @Test
     fun `a slow health check does not delay the caller`() {
         servers.forEach { it.stubFor(get(urlPathEqualTo("/health")).willReturn(ok().withFixedDelay(2000))) }
         val client = client()

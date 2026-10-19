@@ -32,21 +32,26 @@ class SearchService(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    fun search(term: SearchTerm, postalCode: PostalCode): SearchResult {
+    /** [stores] limits which stale stores may be refreshed; the rest are served from what is stored (spec 003 RF-6). */
+    fun search(term: SearchTerm, postalCode: PostalCode, stores: Set<StoreName> = StoreName.entries.toSet()): SearchResult {
         catalog.wakeIdleScrapers()
         val freshAfter = freshAfter()
         val current = StoreName.entries.associateWith { find(it, term, postalCode) }
         val stale = current.filterValues { it == null || it.fetchedAt.isBefore(freshAfter) }.keys
+        val toRefresh = stale intersect stores
 
         // One virtual thread per stale store; each refresh is bounded by its scraper timeout or the lock wait
         val refreshed = Executors.newVirtualThreadPerTaskExecutor().use { executor ->
-            stale.associateWith { executor.submit<StoreResult> { refreshStore(it, term, postalCode, current[it]) } }
+            toRefresh.associateWith { executor.submit<StoreResult> { refreshStore(it, term, postalCode, current[it]) } }
                 .mapValues { (_, future) -> future.get() }
         }
 
-        val stores = StoreName.entries.map { refreshed[it] ?: view(current.getValue(it)!!, stale = false) }
-        if (stores.all { it.status == StoreStatus.UNAVAILABLE }) throw AllStoresUnavailableException()
-        return SearchResult(term, postalCode, stores)
+        val results = StoreName.entries.map { store ->
+            val snapshot = current[store]
+            refreshed[store] ?: if (store in stale) fallback(store, snapshot) else view(snapshot!!, stale = false)
+        }
+        if (results.all { it.status == StoreStatus.UNAVAILABLE }) throw AllStoresUnavailableException()
+        return SearchResult(term, postalCode, results)
     }
 
     private fun refreshStore(store: StoreName, term: SearchTerm, postalCode: PostalCode, snapshot: SearchSnapshotEntity?): StoreResult {

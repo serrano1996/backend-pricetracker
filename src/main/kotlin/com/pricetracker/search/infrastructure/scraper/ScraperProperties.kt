@@ -12,6 +12,13 @@ data class ScraperProperties(
     /** A scraper idle for longer than this gets a background /health ping (spec 001 RF-14). */
     val warmupIdle: Duration = Duration.ofMinutes(10),
 ) {
+    /** Same scrapers with another read timeout, e.g. the nightly job's longer one (spec 003 RF-10). */
+    fun withReadTimeout(timeout: Duration) = copy(
+        mercadona = mercadona.copy(readTimeout = timeout),
+        alcampo = alcampo.copy(readTimeout = timeout),
+        dia = dia.copy(readTimeout = timeout),
+    )
+
     data class Store(
         val url: URI,
         val apiKey: String,

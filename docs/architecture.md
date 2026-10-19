@@ -120,6 +120,8 @@ DDL completo: [specs/001-backend-search-mvp/plan.md](../specs/001-backend-search
 | `SCRAPER_DIA_URL` / `SCRAPER_DIA_API_KEY` | — |
 | `SCRAPER_<TIENDA>_READ_TIMEOUT` | `PT25S` (búsquedas de usuario) |
 | `REFRESH_JOB_READ_TIMEOUT` | `PT90S` (job nocturno) |
+| `REFRESH_JOB_ENABLED` / `REFRESH_JOB_CRON` / `REFRESH_JOB_TOP_N` | `true` / `0 0 4 * * *` (Europe/Madrid) / `50` |
+| `REFRESH_JOB_RECENCY` / `REFRESH_JOB_MIN_DELAY` / `REFRESH_JOB_MAX_DELAY` / `REFRESH_JOB_STORE_FAILURE_LIMIT` | `P30D` / `PT3S` / `PT10S` / `5` |
 | `SEARCH_FRESHNESS_TTL` | `PT12H` |
 | `LOCK_TTL` / `LOCK_POLL_INTERVAL` / `LOCK_WAIT_TIMEOUT` | `PT30S` / `PT0.25S` / `PT15S` (spec 002) |
 | `CORS_ALLOWED_ORIGINS` | `https://<frontend>` |

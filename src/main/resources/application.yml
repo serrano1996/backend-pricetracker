@@ -43,6 +43,15 @@ pricetracker:
     lock-ttl: ${LOCK_TTL:PT30S}
     lock-poll-interval: ${LOCK_POLL_INTERVAL:PT0.25S}
     lock-wait-timeout: ${LOCK_WAIT_TIMEOUT:PT15S}
+  refresh-job:
+    enabled: ${REFRESH_JOB_ENABLED:true}
+    cron: ${REFRESH_JOB_CRON:0 0 4 * * *}
+    top-n: ${REFRESH_JOB_TOP_N:50}
+    recency: ${REFRESH_JOB_RECENCY:P30D}
+    min-delay: ${REFRESH_JOB_MIN_DELAY:PT3S}
+    max-delay: ${REFRESH_JOB_MAX_DELAY:PT10S}
+    store-failure-limit: ${REFRESH_JOB_STORE_FAILURE_LIMIT:5}
+    read-timeout: ${REFRESH_JOB_READ_TIMEOUT:PT90S}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
   scrapers:

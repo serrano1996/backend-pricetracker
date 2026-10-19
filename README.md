@@ -59,4 +59,4 @@ Necesita Docker: los tests de integración levantan PostgreSQL y Redis con Testc
 
 ## Estado
 
-Specs 001 y 002 completadas (001 verificada contra los scrapers reales). Spec 003 por implementar.
+Specs 001, 002 y 003 completadas (001 verificada contra los scrapers reales). Pendientes en el roadmap: matching entre tiendas y endpoint de histórico ([architecture.md §9](docs/architecture.md#9-roadmap-de-specs)).

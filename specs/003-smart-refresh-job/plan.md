@@ -9,7 +9,8 @@ refreshjob/
 ├── TopTermsRefreshJob.kt        # @Scheduled(cron, zone) → adquiere candado → TopTermsRefresher
 ├── TopTermsRefresher.kt         # selección, bucle secuencial, jitter, contador de fallos, resumen (RF-2..RF-6, RF-8)
 ├── RefreshJobProperties.kt      # @ConfigurationProperties refresh-job.*
-└── Sleeper.kt                   # interfaz para dormir; en tests no duerme
+├── RefreshJobConfig.kt          # @EnableScheduling condicionado + ensamblado del job (cliente y búsqueda con timeout largo)
+└── Sleeper (en TopTermsRefresher.kt)  # interfaz para dormir; en tests no duerme
 search/application/StoreRefreshService.kt   # (reutilizado) mismo camino que las búsquedas
 metrics/SearchMetricRepository.kt           # (añadido) findTopRecent(topN, since)
 ```
@@ -19,7 +20,7 @@ metrics/SearchMetricRepository.kt           # (añadido) findTopRecent(topN, sin
 ## 2. Decisiones de diseño
 
 ### D1 — Reutilizar el refresco de búsqueda, no un camino paralelo
-**Elegido:** el job llama al mismo servicio que `SearchService` usa para refrescar una tienda (con candado de spec 002).
+**Elegido (implementado):** el job llama a `SearchService.search(term, cp, stores)`, que ya aplica frescura por tienda (RF-5), candado de la spec 002 y refresco paralelo, y no toca métricas (las registra el controlador). El parámetro `stores` deja fuera las tiendas que superan el límite de fallos (RF-6). El job usa su propia instancia de `SearchService` y `ScraperClient` (no beans), con timeout de 90 s y TTL de candado por término de 100 s; ver `RefreshJobConfig`.
 **Descartado:** un refresco propio del job. Motivo: dos caminos que escriben precios e histórico divergen con el tiempo.
 
 ### D2 — Secuencial con jitter

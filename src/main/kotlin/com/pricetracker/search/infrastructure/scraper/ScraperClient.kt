@@ -60,13 +60,18 @@ class ScraperClient(properties: ScraperProperties, private val clock: Clock) : S
         return claimed
     }
 
-    private fun ping(store: StoreName) {
-        try {
-            clients.getValue(store).get().uri("/health").retrieve().toBodilessEntity()
-            log.info("scraper warmup store={} outcome=ok", store.code)
-        } catch (e: RuntimeException) {
-            log.warn("scraper warmup store={} outcome=failed({})", store.code, e.javaClass.simpleName)
-        }
+    override fun wakeAndWait(store: StoreName): Boolean {
+        lastContact[store] = clock.instant()
+        return ping(store)
+    }
+
+    private fun ping(store: StoreName): Boolean = try {
+        clients.getValue(store).get().uri("/health").retrieve().toBodilessEntity()
+        log.info("scraper warmup store={} outcome=ok", store.code)
+        true
+    } catch (e: RuntimeException) {
+        log.warn("scraper warmup store={} outcome=failed({})", store.code, e.javaClass.simpleName)
+        false
     }
 
     override fun search(store: StoreName, term: SearchTerm, postalCode: PostalCode): StoreSearchResult {
