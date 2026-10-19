@@ -75,6 +75,7 @@ Desglose de [plan.md](plan.md). Orden = orden de dependencia.
 
 ## Cierre
 
-- [ ] **T13 — Verificación manual y README**
+- [x] **T13 — Verificación manual y README**
   Arrancar con los scrapers desplegados, buscar 3 términos reales, repetir y comprobar 0 llamadas en logs. Documentar arranque local en `README.md`.
   Depende: T12. RF: criterios de finalización.
+  Resultado (2026-10-19, CP 28001, BD local): `leche`, `aceite`, `arroz` → 200 con 50 productos por tienda. Primera búsqueda 25,8 s: los tres scrapers estaban dormidos (Render free); Alcampo superó los 25 s y salió `unavailable` (RF-8). Repetir `leche`: 1 llamada (solo Alcampo, sin snapshot), y la siguiente 0 llamadas en 22 ms. Warm-up: 3 pings `/health` correctos. BD: 448 productos, 448 históricos, 9 snapshots, métrica `leche` = 3.
