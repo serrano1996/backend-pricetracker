@@ -13,6 +13,7 @@ Backend del comparador de precios de supermercados (Mercadona, Alcampo, Dia). Un
   - [004 — Matching por tipo de producto](specs/004-product-type-matching/spec.md)
   - [005 — Endpoint de histórico de precios](specs/005-price-history-endpoint/spec.md)
   - [006 — Precios de referencia del código postal servido más cercano](specs/006-nearest-served-postal-code/spec.md)
+  - [007 — Elegir en qué supermercados buscar](specs/007-store-selection/spec.md)
 
 ## Arranque local
 
@@ -49,6 +50,7 @@ Requisitos: JDK 25 (p. ej. `winget install EclipseAdoptium.Temurin.25.JDK`) y Do
 
    ```bash
    curl "http://localhost:8080/api/v1/search?term=leche&postal_code=28001"
+   curl "http://localhost:8080/api/v1/search?term=leche&postal_code=28001&stores=mercadona,dia"
    curl http://localhost:8080/actuator/health
    ```
 
@@ -62,7 +64,7 @@ Necesita Docker: los tests de integración levantan PostgreSQL y Redis con Testc
 
 ## Estado
 
-Specs 001–006 completadas (001 verificada contra los scrapers reales). Siguiente paso natural: despliegue ([architecture.md §7](docs/architecture.md#7-despliegue)).
+Specs 001–007 completadas (001 verificada contra los scrapers reales). Siguiente paso natural: despliegue ([architecture.md §7](docs/architecture.md#7-despliegue)).
 
 ## Créditos
 

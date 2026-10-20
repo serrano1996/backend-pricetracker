@@ -36,16 +36,24 @@ class SearchService(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    /** [stores] limits which stale stores may be refreshed; the rest are served from what is stored (spec 003 RF-6). */
-    fun search(term: SearchTerm, postalCode: PostalCode, stores: Set<StoreName> = StoreName.entries.toSet()): SearchResult {
+    /**
+     * [stores] limits which stale stores may be refreshed; the rest are served from what is stored (spec 003 RF-6).
+     * [only] limits which stores are searched at all: the others are neither read, called nor returned (spec 007 RF-2).
+     */
+    fun search(
+        term: SearchTerm,
+        postalCode: PostalCode,
+        stores: Set<StoreName> = StoreName.entries.toSet(),
+        only: Set<StoreName> = StoreName.entries.toSet(),
+    ): SearchResult {
         catalog.wakeIdleScrapers()
         val freshAfter = freshAfter()
-        val current = StoreName.entries.associateWith { find(it, term, postalCode) }
+        val current = StoreName.entries.filter { it in only }.associateWith { find(it, term, postalCode) }
         val stale = current.filterValues { it == null || it.fetchedAt.isBefore(freshAfter) }.keys
 
         // One virtual thread per store; each refresh is bounded by its scraper timeout or the lock wait
         val results = Executors.newVirtualThreadPerTaskExecutor().use { executor ->
-            StoreName.entries.map { store ->
+            current.keys.map { store ->
                 executor.submit<StoreResult> {
                     val own = resolve(store, term, postalCode, current[store], store in stale, store in stores)
                     if (own.status == StoreStatus.NOT_SERVED) nearestServed(store, term, postalCode, store in stores) ?: own else own

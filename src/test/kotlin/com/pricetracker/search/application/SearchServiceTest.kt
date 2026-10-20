@@ -336,4 +336,22 @@ class SearchServiceTest(
         assertNull(dia.reference)
         assertEquals(listOf("50500", "42001", "50001", "26001"), diaPostalCodes())
     }
+
+    @Test
+    fun `only the selected stores are read, called and returned, in fixed order`() {
+        val result = service.search(term, cp, only = setOf(StoreName.DIA, StoreName.MERCADONA))
+
+        assertEquals(listOf(StoreName.MERCADONA, StoreName.DIA), result.stores.map { it.store })
+        assertEquals(setOf(StoreName.MERCADONA, StoreName.DIA), catalog.calls.toSet())
+        assertEquals(2, catalog.calls.size)
+        assertNull(snapshots.findByQueryTermAndPostalCodeAndStoreName("leche", "28001", StoreName.ALCAMPO))
+    }
+
+    @Test
+    fun `selected stores all unavailable fail the search even if another store has data`() {
+        service.search(term, cp, only = setOf(StoreName.MERCADONA))
+        catalog.responses[StoreName.DIA] = StoreSearchResult.Unavailable("down")
+
+        assertFailsWith<AllStoresUnavailableException> { service.search(term, cp, only = setOf(StoreName.DIA)) }
+    }
 }
