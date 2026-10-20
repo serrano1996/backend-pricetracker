@@ -99,6 +99,7 @@ class SearchControllerTest(
             jsonPath("$.stores[0].products[0].unit_price_unit") { value("L") }
             jsonPath("$.stores[0].products[0].image_url") { value("https://img/1.jpg") }
             jsonPath("$.stores[0].products[0].category") { value("Leche") }
+            jsonPath("$.stores[0].products[0].type") { value("Leche entera") }
             jsonPath("$.stores[1].status") { value("not_served") }
             jsonPath("$.stores[1].products") { isEmpty() }
             jsonPath("$.stores[2].status") { value("unavailable") }
