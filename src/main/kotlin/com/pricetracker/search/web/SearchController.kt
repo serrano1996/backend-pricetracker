@@ -1,5 +1,6 @@
 package com.pricetracker.search.web
 
+import com.pricetracker.history.application.PriceTrends
 import com.pricetracker.metrics.SearchMetricRecorder
 import com.pricetracker.search.application.PriceComparator
 import com.pricetracker.search.application.ProductTypeCatalog
@@ -18,6 +19,7 @@ class SearchController(
     private val searchService: SearchService,
     private val metrics: SearchMetricRecorder,
     private val productTypes: ProductTypeCatalog,
+    private val trends: PriceTrends,
 ) {
 
     @GetMapping("/search")
@@ -34,6 +36,7 @@ class SearchController(
         // Recorded here, not in SearchService, so the nightly job (spec 003) never counts as a search
         metrics.record(searchTerm, code)
         val result = searchService.search(searchTerm, code, only = selected)
-        return SearchResponse.from(result, PriceComparator.compare(result, productTypes.types), productTypes.types)
+        val priceTrends = trends.of(result.stores.flatMap { store -> store.products.map { it.id } })
+        return SearchResponse.from(result, PriceComparator.compare(result, productTypes.types), productTypes.types, priceTrends)
     }
 }

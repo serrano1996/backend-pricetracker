@@ -117,6 +117,35 @@ class SearchControllerTest(
         assertEquals(1L, metricCount())
     }
 
+    private fun searchLeche() = mockMvc.get("/api/v1/search") {
+        param("term", "leche")
+        param("postal_code", "28001")
+        param("stores", "mercadona")
+    }
+
+    private fun stubLeche(price: String) = stubProducts(
+        "mercadona", 200,
+        """{"search": {"warehouse": "mad1"}, "products": [
+            {"id": "10381", "name": "Leche entera", "price": $price, "price_format": "$price €/L", "image_url": "https://img/1.jpg", "category": "Leche"}]}""",
+    )
+
+    @Test
+    fun `each product carries its last price change, null until its price has changed`() {
+        stubLeche("0.95")
+        searchLeche().andExpect {
+            jsonPath("$.stores[0].products[0].previous_price") { value(null) }
+            jsonPath("$.stores[0].products[0].price_changed_at") { value(null) }
+        }
+
+        jdbc.update("update search_snapshots set fetched_at = fetched_at - interval '13 hours'")
+        stubLeche("0.99")
+        searchLeche().andExpect {
+            jsonPath("$.stores[0].products[0].price") { value(0.99) }
+            jsonPath("$.stores[0].products[0].previous_price") { value(0.95) }
+            jsonPath("$.stores[0].products[0].price_changed_at") { isString() }
+        }
+    }
+
     @Test
     fun `stores limits which scrapers are called and which stores are returned`() {
         listOf("mercadona", "alcampo", "dia").forEach {
