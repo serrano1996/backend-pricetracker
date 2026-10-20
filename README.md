@@ -15,6 +15,7 @@ Backend del comparador de precios de supermercados (Mercadona, Alcampo, Dia). Un
   - [006 — Precios de referencia del código postal servido más cercano](specs/006-nearest-served-postal-code/spec.md)
   - [007 — Elegir en qué supermercados buscar](specs/007-store-selection/spec.md)
   - [008 — Tipos de producto básicos](specs/008-basic-product-types/spec.md)
+  - [009 — Tipos de producto de limpieza](specs/009-cleaning-product-types/spec.md)
 
 ## Arranque local
 
@@ -65,7 +66,7 @@ Necesita Docker: los tests de integración levantan PostgreSQL y Redis con Testc
 
 ## Estado
 
-Specs 001–008 completadas (001 verificada contra los scrapers reales). Siguiente paso natural: despliegue ([architecture.md §7](docs/architecture.md#7-despliegue)).
+Specs 001–009 completadas (001 verificada contra los scrapers reales). Siguiente paso natural: despliegue ([architecture.md §7](docs/architecture.md#7-despliegue)).
 
 ## Créditos
 

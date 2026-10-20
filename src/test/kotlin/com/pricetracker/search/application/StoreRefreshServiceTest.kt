@@ -191,6 +191,27 @@ class StoreRefreshServiceTest(
             StoreOffer("46", "Rosquillas de mantequilla Hacendado", BigDecimal("2.05"), "6.83 €/kg", "i", "c") to null,
             StoreOffer("47", "Agua mineral Dia 8 L", BigDecimal("0.96"), "0.12 €/L", "i", "c") to "Agua mineral",
             StoreOffer("48", "Agua mineral con gas grande Vichy Catalan", BigDecimal("1.65"), "1.65 €/L", "i", "c") to null,
+            // V5 cleaning products: live names of the three stores (2026-10-20, CP 28001)
+            StoreOffer("49", "Lejía normal Tradicional Bosque Verde", BigDecimal("0.80"), "0.40 €/L", "i", "c") to "Lejía",
+            StoreOffer("50", "PRODUCTO ECONÓMICO ALCAMPO Lejía 5 l.", BigDecimal("1.85"), "0.37 €/L", "i", "c") to "Lejía",
+            StoreOffer("51", "Lejía Dia 2 L", BigDecimal("0.80"), "0.40 €/L", "i", "c") to "Lejía",
+            StoreOffer("52", "Limpiador WC con lejía Bosque Verde en gel", BigDecimal("0.71"), "0.95 €/L", "i", "c") to null,
+            StoreOffer("53", "Lejía Perfumada con detergente Bosque Verde", BigDecimal("1.16"), "0.58 €/L", "i", "c") to "Lejía con detergente",
+            StoreOffer("54", "PRODUCTO ALCAMPO Deterlejía limón 2 l.", BigDecimal("1.16"), "0.58 €/L", "i", "c") to "Lejía con detergente",
+            StoreOffer("55", "Lejía con detergente limón Dia 2 L", BigDecimal("1.16"), "0.58 €/L", "i", "c") to "Lejía con detergente",
+            StoreOffer("56", "Friegasuelos Pino Bosque Verde líquido", BigDecimal("0.95"), "0.63 €/L", "i", "c") to "Friegasuelos",
+            StoreOffer("57", "PRODUCTO ALCAMPO Fregasuelos pino 1,5 l.", BigDecimal("0.95"), "0.63 €/L", "i", "c") to "Friegasuelos",
+            StoreOffer("58", "Friegasuelos concentrado floral Dia Super Paco 1 L", BigDecimal("1.85"), "1.85 €/L", "i", "c") to null,
+            StoreOffer("59", "Lavavajillas a mano Bosque Verde", BigDecimal("1.14"), "0.88 €/L", "i", "c") to "Lavavajillas a mano",
+            StoreOffer("60", "PRODUCTO ECONÓMICO ALCAMPO Detergente lavavajillas a mano 1,5 l.", BigDecimal("1.07"), "0.71 €/L", "i", "c") to "Lavavajillas a mano",
+            StoreOffer("61", "PRODUCTO ALCAMPO Lavavajillas en gel para máquinas, Todo en 1 720 ml.", BigDecimal("3.65"), "5.07 €/L", "i", "c") to null,
+            StoreOffer("62", "Lavavajillas ultra Dia Super Paco 500 ml", BigDecimal("0.92"), "1.84 €/L", "i", "c") to null,
+            StoreOffer("63", "Limpiacristales Dia Super Paco 1 L", BigDecimal("1.20"), "1.20 €/L", "i", "c") to "Limpiacristales",
+            StoreOffer("64", "Limpiacristales y multiusos Bosque Verde", BigDecimal("1.10"), "1.10 €/L", "i", "c") to null,
+            StoreOffer("65", "Limpiador multiusos Dia Super Paco 600 ml", BigDecimal("1.30"), "2.17 €/L", "i", "c") to "Limpiador multiusos",
+            StoreOffer("66", "Papel Multiusos Resistente Bosque Verde", BigDecimal("3.75"), "3.75 €/ud", "i", "c") to null,
+            StoreOffer("67", "Papel higiénico doble rollo Dia La Llama 12 unidades", BigDecimal("4.56"), "0.38 €/ud", "i", "c") to "Papel higiénico doble rollo",
+            StoreOffer("68", "Papel higiénico húmedo WC Bosque Verde", BigDecimal("1.60"), "0.02 €/ud", "i", "c") to null,
         )
 
         persist(*expected.keys.toTypedArray())
