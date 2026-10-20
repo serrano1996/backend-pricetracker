@@ -42,4 +42,14 @@ interface SearchMetricRepository : JpaRepository<SearchMetricEntity, Long> {
     /** Most searched (term, postal code) pairs searched since [since]; ties go to the most recent (spec 003 RF-2). */
     @Query("select m from SearchMetricEntity m where m.lastSearchedAt >= :since order by m.searchCount desc, m.lastSearchedAt desc")
     fun findTopRecent(since: Instant, limit: Limit): List<SearchMetricEntity>
+
+    /**
+     * Terms searched since [since], most searched first across postal codes (spec 011 RF-3).
+     * shortcut: counts are all-time, only the last search must be recent; keep counts per day if that skews suggestions.
+     */
+    @Query(
+        "select m.queryTerm from SearchMetricEntity m where m.lastSearchedAt >= :since " +
+            "group by m.queryTerm order by sum(m.searchCount) desc, max(m.lastSearchedAt) desc",
+    )
+    fun findPopularTerms(since: Instant, limit: Limit): List<String>
 }

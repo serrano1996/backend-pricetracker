@@ -1,5 +1,6 @@
 package com.pricetracker.search.web
 
+import com.pricetracker.history.application.PriceTrend
 import com.pricetracker.search.application.ProductView
 import com.pricetracker.search.application.SearchResult
 import com.pricetracker.search.application.StoreResult
@@ -21,11 +22,16 @@ data class SearchResponse(
     val comparison: List<ComparisonResponse>,
 ) {
     companion object {
-        /** [types] names each product's type (spec 010 RF-1). */
-        fun from(result: SearchResult, comparison: List<TypeComparison>, types: Map<UUID, ProductType>) = SearchResponse(
+        /** [types] names each product's type (spec 010 RF-1); [trends] gives its last price change (spec 011 RF-1). */
+        fun from(
+            result: SearchResult,
+            comparison: List<TypeComparison>,
+            types: Map<UUID, ProductType>,
+            trends: Map<UUID, PriceTrend>,
+        ) = SearchResponse(
             term = result.term.value,
             postalCode = result.postalCode.value,
-            stores = result.stores.map { StoreResponse.from(it, types) },
+            stores = result.stores.map { StoreResponse.from(it, types, trends) },
             comparison = comparison.map(ComparisonResponse::from),
         )
     }
@@ -60,12 +66,12 @@ data class StoreResponse(
     val referenceDistanceKm: Int?,
 ) {
     companion object {
-        fun from(store: StoreResult, types: Map<UUID, ProductType>) = StoreResponse(
+        fun from(store: StoreResult, types: Map<UUID, ProductType>, trends: Map<UUID, PriceTrend>) = StoreResponse(
             store = store.store.code,
             status = store.status.name.lowercase(),
             stale = store.stale,
             fetchedAt = store.fetchedAt,
-            products = store.products.map { ProductResponse.from(it, types) },
+            products = store.products.map { ProductResponse.from(it, types, trends[it.id]) },
             referencePostalCode = store.reference?.postalCode,
             referenceDistanceKm = store.reference?.distanceKm,
         )
@@ -85,11 +91,15 @@ data class ProductResponse(
     val category: String?,
     /** Product type name (spec 004), the key to its equivalents in `comparison`; null when none matched (spec 010). */
     val type: String?,
+    /** Price before the last change, and when the current price started; null until the price has changed (spec 011). */
+    val previousPrice: BigDecimal?,
+    val priceChangedAt: Instant?,
 ) {
     companion object {
-        fun from(p: ProductView, types: Map<UUID, ProductType>) = ProductResponse(
+        fun from(p: ProductView, types: Map<UUID, ProductType>, trend: PriceTrend?) = ProductResponse(
             p.id, p.externalId, p.name, p.price, p.priceFormat, p.unitPrice, p.unitPriceUnit, p.imageUrl, p.category,
             p.productTypeId?.let { types[it]?.name },
+            trend?.previousPrice, trend?.changedAt,
         )
     }
 }
