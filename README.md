@@ -12,6 +12,7 @@ Backend del comparador de precios de supermercados (Mercadona, Alcampo, Dia). Un
   - [003 — Job nocturno de refresco](specs/003-smart-refresh-job/spec.md)
   - [004 — Matching por tipo de producto](specs/004-product-type-matching/spec.md)
   - [005 — Endpoint de histórico de precios](specs/005-price-history-endpoint/spec.md)
+  - [006 — Precios de referencia del código postal servido más cercano](specs/006-nearest-served-postal-code/spec.md)
 
 ## Arranque local
 
@@ -61,4 +62,8 @@ Necesita Docker: los tests de integración levantan PostgreSQL y Redis con Testc
 
 ## Estado
 
-Specs 001–005 completadas (001 verificada contra los scrapers reales). Siguiente paso natural: despliegue ([architecture.md §7](docs/architecture.md#7-despliegue)).
+Specs 001–006 completadas (001 verificada contra los scrapers reales). Siguiente paso natural: despliegue ([architecture.md §7](docs/architecture.md#7-despliegue)).
+
+## Créditos
+
+Coordenadas de códigos postales: [GeoNames](https://www.geonames.org/) (CC BY 4.0), en `src/main/resources/geo/postal-codes-es.csv` (spec 006).

@@ -88,6 +88,8 @@ class SearchControllerTest(
             jsonPath("$.stores[0].status") { value("ok") }
             jsonPath("$.stores[0].stale") { value(false) }
             jsonPath("$.stores[0].fetched_at") { isString() }
+            jsonPath("$.stores[0].reference_postal_code") { value(null) }
+            jsonPath("$.stores[0].reference_distance_km") { value(null) }
             jsonPath("$.stores[0].products[0].id") { isString() }
             jsonPath("$.stores[0].products[0].external_id") { value("10381") }
             jsonPath("$.stores[0].products[0].name") { value("Leche entera") }

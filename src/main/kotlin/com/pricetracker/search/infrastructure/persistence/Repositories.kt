@@ -32,6 +32,10 @@ interface SearchSnapshotRepository : JpaRepository<SearchSnapshotEntity, UUID> {
     // Items fetched in the same query: callers read them outside any transaction (open-in-view is off)
     @EntityGraph(attributePaths = ["items"])
     fun findByQueryTermAndPostalCodeAndStoreName(queryTerm: String, postalCode: String, storeName: StoreName): SearchSnapshotEntity?
+
+    /** Postal codes where [storeName] answered [status] for any term: being served does not depend on the term (spec 006). */
+    @Query("select distinct s.postalCode from SearchSnapshotEntity s where s.storeName = :storeName and s.status = :status")
+    fun findPostalCodes(storeName: StoreName, status: SnapshotStatus): List<String>
 }
 
 interface SearchMetricRepository : JpaRepository<SearchMetricEntity, Long> {

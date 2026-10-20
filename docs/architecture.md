@@ -125,6 +125,7 @@ DDL completo: [specs/001-backend-search-mvp/plan.md](../specs/001-backend-search
 | `SEARCH_FRESHNESS_TTL` | `PT12H` |
 | `LOCK_TTL` / `LOCK_POLL_INTERVAL` / `LOCK_WAIT_TIMEOUT` | `PT30S` / `PT0.25S` / `PT15S` (spec 002) |
 | `SCRAPER_CALL_BUDGET` / `SCRAPER_CALL_BUDGET_WINDOW` | `300` / `PT1H`: llamadas a scrapers por ventana, entre todas las instancias. Agotado, se sirve lo guardado. El job nocturno no lo consume. |
+| `SEARCH_FALLBACK_MAX_PROBES` | `3`: códigos postales cercanos probados por tienda cuando no sirve el buscado (spec 006). |
 | `CORS_ALLOWED_ORIGINS` | `https://<frontend>` |
 
 ## 8. Riesgos conocidos
