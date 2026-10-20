@@ -4,6 +4,7 @@ import com.pricetracker.search.application.ProductView
 import com.pricetracker.search.application.SearchResult
 import com.pricetracker.search.application.StoreResult
 import com.pricetracker.search.application.TypeComparison
+import com.pricetracker.search.domain.ProductType
 import tools.jackson.databind.PropertyNamingStrategies
 import tools.jackson.databind.annotation.JsonNaming
 import java.math.BigDecimal
@@ -20,10 +21,11 @@ data class SearchResponse(
     val comparison: List<ComparisonResponse>,
 ) {
     companion object {
-        fun from(result: SearchResult, comparison: List<TypeComparison>) = SearchResponse(
+        /** [types] names each product's type (spec 010 RF-1). */
+        fun from(result: SearchResult, comparison: List<TypeComparison>, types: Map<UUID, ProductType>) = SearchResponse(
             term = result.term.value,
             postalCode = result.postalCode.value,
-            stores = result.stores.map(StoreResponse::from),
+            stores = result.stores.map { StoreResponse.from(it, types) },
             comparison = comparison.map(ComparisonResponse::from),
         )
     }
@@ -58,12 +60,12 @@ data class StoreResponse(
     val referenceDistanceKm: Int?,
 ) {
     companion object {
-        fun from(store: StoreResult) = StoreResponse(
+        fun from(store: StoreResult, types: Map<UUID, ProductType>) = StoreResponse(
             store = store.store.code,
             status = store.status.name.lowercase(),
             stale = store.stale,
             fetchedAt = store.fetchedAt,
-            products = store.products.map(ProductResponse::from),
+            products = store.products.map { ProductResponse.from(it, types) },
             referencePostalCode = store.reference?.postalCode,
             referenceDistanceKm = store.reference?.distanceKm,
         )
@@ -81,10 +83,13 @@ data class ProductResponse(
     val unitPriceUnit: String?,
     val imageUrl: String?,
     val category: String?,
+    /** Product type name (spec 004), the key to its equivalents in `comparison`; null when none matched (spec 010). */
+    val type: String?,
 ) {
     companion object {
-        fun from(p: ProductView) = ProductResponse(
+        fun from(p: ProductView, types: Map<UUID, ProductType>) = ProductResponse(
             p.id, p.externalId, p.name, p.price, p.priceFormat, p.unitPrice, p.unitPriceUnit, p.imageUrl, p.category,
+            p.productTypeId?.let { types[it]?.name },
         )
     }
 }

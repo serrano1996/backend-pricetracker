@@ -34,6 +34,6 @@ class SearchController(
         // Recorded here, not in SearchService, so the nightly job (spec 003) never counts as a search
         metrics.record(searchTerm, code)
         val result = searchService.search(searchTerm, code, only = selected)
-        return SearchResponse.from(result, PriceComparator.compare(result, productTypes.types))
+        return SearchResponse.from(result, PriceComparator.compare(result, productTypes.types), productTypes.types)
     }
 }
