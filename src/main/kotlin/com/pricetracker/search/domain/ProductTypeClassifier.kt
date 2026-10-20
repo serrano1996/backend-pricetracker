@@ -16,12 +16,17 @@ data class ProductType(
 /** Deterministic keyword classifier (spec 004 RF-2, plan D2, D3). */
 class ProductTypeClassifier(private val types: List<ProductType>) {
 
-    /** The most specific type whose words all appear and whose unit matches; null on no match or a tie. */
+    /**
+     * The most specific type whose words all appear and whose unit matches; null on no match or a tie.
+     * A required word may list alternatives, "macarron|macarrones": stores differ in plural and spelling (spec 008).
+     */
     fun classify(name: String, unit: String?): ProductType? {
         if (unit == null) return null
         val words = normalize(name).split(' ').toSet()
         val candidates = types.filter { type ->
-            type.unit == unit && words.containsAll(type.matchAll) && type.matchNone.none { it in words }
+            type.unit == unit &&
+                type.matchAll.all { required -> required.split('|').any { it in words } } &&
+                type.matchNone.none { it in words }
         }
         val best = candidates.maxOfOrNull { it.matchAll.size } ?: return null
         return candidates.singleOrNull { it.matchAll.size == best }

@@ -51,6 +51,19 @@ class ProductTypeClassifierTest {
     }
 
     @Test
+    fun `a required word can list alternatives, for plurals and spellings`() {
+        val pasta = type("Espaguetis", "kg", listOf("spaghetti|espagueti|espaguetis"), listOf("integral"))
+        val withPasta = ProductTypeClassifier(listOf(pasta, entera))
+
+        assertEquals(pasta, withPasta.classify("Spaghetti Hacendado", "kg"))
+        assertEquals(pasta, withPasta.classify("Espagueti Dia Al Diante 1 Kg", "kg"))
+        assertEquals(pasta, withPasta.classify("Espaguetis N.º 3 Gallo 400 g", "kg"))
+        assertNull(withPasta.classify("Spaghetti integral Hacendado", "kg"))
+        // Alternatives count as one word for specificity: "Leche entera" (2) still beats nothing else here
+        assertEquals(entera, withPasta.classify("Leche entera Hacendado", "L"))
+    }
+
+    @Test
     fun `the product unit must match the type unit`() {
         assertNull(classifier.classify("Polvorones con aceite de oliva 310 g", "kg"))
         assertNull(classifier.classify("Leche entera Hacendado", null))

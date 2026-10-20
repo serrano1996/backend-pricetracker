@@ -55,10 +55,14 @@ class SchemaMigrationTest(@Autowired private val jdbc: JdbcTemplate) {
         val types = jdbc.queryForList("select canonical_name, unit, array_to_string(match_all, ' ') as words from products")
             .associate { it["canonical_name"] to "${it["unit"]}|${it["words"]}" }
 
-        assertEquals(11, types.size)
+        // 11 from V2, 16 basic groceries from V4
+        assertEquals(27, types.size)
         assertEquals("L|leche entera", types["Leche entera"])
         assertEquals("L|aceite oliva virgen extra", types["Aceite de oliva virgen extra"])
         assertEquals("kg|arroz bomba", types["Arroz bomba"])
+        assertEquals("kg|pan molde", types["Pan de molde"])
+        assertEquals("kg|macarron|macarrones", types["Macarrones"])
+        assertEquals("L|agua mineral", types["Agua mineral"])
     }
 
     @Test
