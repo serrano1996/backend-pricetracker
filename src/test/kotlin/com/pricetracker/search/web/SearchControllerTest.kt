@@ -88,6 +88,8 @@ class SearchControllerTest(
             jsonPath("$.stores[0].status") { value("ok") }
             jsonPath("$.stores[0].stale") { value(false) }
             jsonPath("$.stores[0].fetched_at") { isString() }
+            jsonPath("$.stores[0].reference_postal_code") { value(null) }
+            jsonPath("$.stores[0].reference_distance_km") { value(null) }
             jsonPath("$.stores[0].products[0].id") { isString() }
             jsonPath("$.stores[0].products[0].external_id") { value("10381") }
             jsonPath("$.stores[0].products[0].name") { value("Leche entera") }
@@ -112,6 +114,40 @@ class SearchControllerTest(
             jsonPath("$.comparison[0].offers[0].price") { value(0.95) }
         }
         assertEquals(1L, metricCount())
+    }
+
+    @Test
+    fun `stores limits which scrapers are called and which stores are returned`() {
+        listOf("mercadona", "alcampo", "dia").forEach {
+            stubProducts(it, 200, """{"search": {"warehouse": "w"}, "products": []}""")
+        }
+
+        mockMvc.get("/api/v1/search") {
+            param("term", "leche")
+            param("postal_code", "28001")
+            param("stores", "dia,mercadona")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.stores.length()") { value(2) }
+            jsonPath("$.stores[0].store") { value("mercadona") }
+            jsonPath("$.stores[1].store") { value("dia") }
+        }
+        assertEquals(0, wm.findAll(anyRequestedFor(urlPathEqualTo("/api/v1/products")).withHeader("X-API-Key", equalTo("key-alcampo"))).size)
+        assertEquals(2, productsRequests())
+    }
+
+    @Test
+    fun `unknown store is 400 without calling scrapers or counting the search`() {
+        mockMvc.get("/api/v1/search") {
+            param("term", "leche")
+            param("postal_code", "28001")
+            param("stores", "dia,lidl")
+        }.andExpect {
+            status { isBadRequest() }
+            jsonPath("$.detail") { value("stores must be a comma-separated list of: mercadona, alcampo, dia") }
+        }
+        assertEquals(0, productsRequests())
+        assertEquals(0L, metricCount())
     }
 
     @Test

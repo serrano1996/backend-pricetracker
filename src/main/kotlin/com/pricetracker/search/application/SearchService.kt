@@ -6,6 +6,7 @@ import com.pricetracker.search.application.port.RefreshLockPort
 import com.pricetracker.search.application.port.ScraperCallBudgetPort
 import com.pricetracker.search.application.port.StoreCatalogPort
 import com.pricetracker.search.domain.PostalCode
+import com.pricetracker.search.domain.PostalCodeLocator
 import com.pricetracker.search.domain.SearchTerm
 import com.pricetracker.search.domain.StoreName
 import com.pricetracker.search.domain.StoreSearchResult
@@ -29,31 +30,67 @@ class SearchService(
     private val refresh: StoreRefreshService,
     private val locks: RefreshLockPort,
     private val budget: ScraperCallBudgetPort,
+    private val locator: PostalCodeLocator,
     private val properties: SearchProperties,
     private val clock: Clock,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    /** [stores] limits which stale stores may be refreshed; the rest are served from what is stored (spec 003 RF-6). */
-    fun search(term: SearchTerm, postalCode: PostalCode, stores: Set<StoreName> = StoreName.entries.toSet()): SearchResult {
+    /**
+     * [stores] limits which stale stores may be refreshed; the rest are served from what is stored (spec 003 RF-6).
+     * [only] limits which stores are searched at all: the others are neither read, called nor returned (spec 007 RF-2).
+     */
+    fun search(
+        term: SearchTerm,
+        postalCode: PostalCode,
+        stores: Set<StoreName> = StoreName.entries.toSet(),
+        only: Set<StoreName> = StoreName.entries.toSet(),
+    ): SearchResult {
         catalog.wakeIdleScrapers()
         val freshAfter = freshAfter()
-        val current = StoreName.entries.associateWith { find(it, term, postalCode) }
+        val current = StoreName.entries.filter { it in only }.associateWith { find(it, term, postalCode) }
         val stale = current.filterValues { it == null || it.fetchedAt.isBefore(freshAfter) }.keys
-        val toRefresh = stale intersect stores
 
-        // One virtual thread per stale store; each refresh is bounded by its scraper timeout or the lock wait
-        val refreshed = Executors.newVirtualThreadPerTaskExecutor().use { executor ->
-            toRefresh.associateWith { executor.submit<StoreResult> { refreshStore(it, term, postalCode, current[it]) } }
-                .mapValues { (_, future) -> future.get() }
-        }
-
-        val results = StoreName.entries.map { store ->
-            val snapshot = current[store]
-            refreshed[store] ?: if (store in stale) fallback(store, snapshot) else view(snapshot!!, stale = false)
+        // One virtual thread per store; each refresh is bounded by its scraper timeout or the lock wait
+        val results = Executors.newVirtualThreadPerTaskExecutor().use { executor ->
+            current.keys.map { store ->
+                executor.submit<StoreResult> {
+                    val own = resolve(store, term, postalCode, current[store], store in stale, store in stores)
+                    if (own.status == StoreStatus.NOT_SERVED) nearestServed(store, term, postalCode, store in stores) ?: own else own
+                }
+            }.map { it.get() }
         }
         if (results.all { it.status == StoreStatus.UNAVAILABLE }) throw AllStoresUnavailableException()
         return SearchResult(term, postalCode, results)
+    }
+
+    /** The fresh snapshot, a refreshed one, or what is stored when [refreshable] is false (spec 003 RF-6). */
+    private fun resolve(
+        store: StoreName, term: SearchTerm, postalCode: PostalCode, snapshot: SearchSnapshotEntity?, expired: Boolean, refreshable: Boolean,
+    ): StoreResult = when {
+        !expired -> view(requireNotNull(snapshot), stale = false)
+        refreshable -> refreshStore(store, term, postalCode, snapshot)
+        else -> fallback(store, snapshot)
+    }
+
+    /**
+     * [store] does not serve [origin]: try, nearest first, the postal codes it is known to serve plus the provincial
+     * capitals, skipping those known not served (spec 006). Snapshots are the memory, each under its own postal code.
+     */
+    private fun nearestServed(store: StoreName, term: SearchTerm, origin: PostalCode, refreshable: Boolean): StoreResult? {
+        val served = snapshots.findPostalCodes(store, SnapshotStatus.OK).toSet()
+        val notServed = snapshots.findPostalCodes(store, SnapshotStatus.NOT_SERVED).toSet() - served
+        return locator.nearest(origin.value, served + locator.seeds - notServed)
+            .asSequence()
+            .take(properties.fallbackMaxProbes)
+            .firstNotNullOfOrNull { nearby ->
+                val postalCode = PostalCode.of(nearby.postalCode)
+                val snapshot = find(store, term, postalCode)
+                val expired = snapshot == null || snapshot.fetchedAt.isBefore(freshAfter())
+                resolve(store, term, postalCode, snapshot, expired, refreshable)
+                    .takeIf { it.status == StoreStatus.OK }
+                    ?.copy(reference = nearby)
+            }
     }
 
     private fun refreshStore(store: StoreName, term: SearchTerm, postalCode: PostalCode, snapshot: SearchSnapshotEntity?): StoreResult {

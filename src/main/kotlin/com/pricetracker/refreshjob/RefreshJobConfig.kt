@@ -4,6 +4,7 @@ import com.pricetracker.config.SearchProperties
 import com.pricetracker.search.application.SearchService
 import com.pricetracker.search.application.StoreRefreshService
 import com.pricetracker.search.application.port.RefreshLockPort
+import com.pricetracker.search.domain.PostalCodeLocator
 import com.pricetracker.search.infrastructure.persistence.SearchMetricRepository
 import com.pricetracker.search.infrastructure.persistence.SearchSnapshotRepository
 import com.pricetracker.search.infrastructure.scraper.ScraperClient
@@ -37,8 +38,9 @@ class RefreshJobConfig {
     ): TopTermsRefreshJob {
         val catalog = ScraperClient(scrapers.withReadTimeout(properties.readTimeout), clock)
         // No call budget: the job is already capped by top-n, and user traffic must not starve it
+        // No coordinates: the job never probes other postal codes, those calls would skip its jitter (spec 006 RF-7)
         val search = SearchService(
-            catalog, snapshots, refresh, locks, { true },
+            catalog, snapshots, refresh, locks, { true }, PostalCodeLocator(emptyMap()),
             searchProperties.copy(lockTtl = properties.readTimeout.plusSeconds(10)), clock,
         )
         val refresher = TopTermsRefresher(metrics, search, catalog, properties, clock, Random.Default) { Thread.sleep(it) }

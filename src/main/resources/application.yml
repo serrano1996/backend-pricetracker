@@ -45,6 +45,7 @@ pricetracker:
     lock-wait-timeout: ${LOCK_WAIT_TIMEOUT:PT15S}
     scraper-call-budget: ${SCRAPER_CALL_BUDGET:300}
     scraper-call-budget-window: ${SCRAPER_CALL_BUDGET_WINDOW:PT1H}
+    fallback-max-probes: ${SEARCH_FALLBACK_MAX_PROBES:3}
   refresh-job:
     enabled: ${REFRESH_JOB_ENABLED:true}
     cron: ${REFRESH_JOB_CRON:0 0 4 * * *}

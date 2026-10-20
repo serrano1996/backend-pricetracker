@@ -16,4 +16,6 @@ data class SearchProperties(
     /** Scraper calls allowed per window across all instances; past it, searches serve what is stored. */
     val scraperCallBudget: Int = 300,
     val scraperCallBudgetWindow: Duration = Duration.ofHours(1),
+    /** Nearest postal codes tried per store when it does not serve the searched one (spec 006 RF-4). */
+    val fallbackMaxProbes: Int = 3,
 )

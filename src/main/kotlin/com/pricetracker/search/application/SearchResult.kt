@@ -1,5 +1,6 @@
 package com.pricetracker.search.application
 
+import com.pricetracker.search.domain.NearbyPostalCode
 import com.pricetracker.search.domain.PostalCode
 import com.pricetracker.search.domain.SearchTerm
 import com.pricetracker.search.domain.StoreName
@@ -7,7 +8,7 @@ import java.math.BigDecimal
 import java.time.Instant
 import java.util.UUID
 
-/** Outcome of a search across the three stores, in [StoreName] order (spec 001 RF-1). */
+/** Outcome of a search across the selected stores, in [StoreName] order (spec 001 RF-1, spec 007). */
 data class SearchResult(val term: SearchTerm, val postalCode: PostalCode, val stores: List<StoreResult>)
 
 enum class StoreStatus { OK, NOT_SERVED, UNAVAILABLE }
@@ -19,6 +20,8 @@ data class StoreResult(
     val stale: Boolean,
     val fetchedAt: Instant?,
     val products: List<ProductView>,
+    /** Set when [store] does not serve the searched postal code and these prices are from the nearest one it does (spec 006). */
+    val reference: NearbyPostalCode? = null,
 )
 
 data class ProductView(

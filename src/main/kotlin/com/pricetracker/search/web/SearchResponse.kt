@@ -53,6 +53,9 @@ data class StoreResponse(
     val stale: Boolean,
     val fetchedAt: Instant?,
     val products: List<ProductResponse>,
+    /** Postal code the prices come from when the store does not serve the searched one, else null (spec 006 RF-5). */
+    val referencePostalCode: String?,
+    val referenceDistanceKm: Int?,
 ) {
     companion object {
         fun from(store: StoreResult) = StoreResponse(
@@ -61,6 +64,8 @@ data class StoreResponse(
             stale = store.stale,
             fetchedAt = store.fetchedAt,
             products = store.products.map(ProductResponse::from),
+            referencePostalCode = store.reference?.postalCode,
+            referenceDistanceKm = store.reference?.distanceKm,
         )
     }
 }

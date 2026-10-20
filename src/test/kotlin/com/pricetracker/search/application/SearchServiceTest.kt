@@ -7,12 +7,16 @@ import com.pricetracker.search.application.port.LockToken
 import com.pricetracker.search.application.port.RefreshLockPort
 import com.pricetracker.search.application.port.ScraperCallBudgetPort
 import com.pricetracker.search.application.port.StoreCatalogPort
+import com.pricetracker.search.domain.Coordinates
+import com.pricetracker.search.domain.NearbyPostalCode
 import com.pricetracker.search.domain.PostalCode
+import com.pricetracker.search.domain.PostalCodeLocator
 import com.pricetracker.search.domain.SearchTerm
 import com.pricetracker.search.domain.StoreName
 import com.pricetracker.search.domain.StoreOffer
 import com.pricetracker.search.domain.StoreSearchResult
 import com.pricetracker.search.infrastructure.persistence.SearchSnapshotRepository
+import com.pricetracker.search.infrastructure.persistence.SnapshotStatus
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.annotation.Import
@@ -51,7 +55,9 @@ class SearchServiceTest(
         locks: RefreshLockPort = redisLock,
         props: SearchProperties = properties,
         budget: ScraperCallBudgetPort = ScraperCallBudgetPort { true },
-    ) = SearchService(catalog, snapshots, refresh, locks, budget, props, Clock.systemUTC())
+        // No coordinates by default: only the spec 006 tests look for other postal codes
+        locator: PostalCodeLocator = PostalCodeLocator(emptyMap()),
+    ) = SearchService(catalog, snapshots, refresh, locks, budget, locator, props, Clock.systemUTC())
     private val service by lazy { service() }
     private val term = SearchTerm.of("leche")
     private val cp = PostalCode.of("28001")
@@ -260,5 +266,92 @@ class SearchServiceTest(
             assertTrue(attempt is LockAttempt.Acquired, "$store still locked")
             redisLock.release(attempt.token)
         }
+    }
+
+    // Spec 006, coordinates from the GeoNames file. From Tarazona: Soria 64 km < Zaragoza 76 < Logroño 86 < Pamplona 101
+    private val tarazona = PostalCode.of("50500")
+    private val aragon = PostalCodeLocator(
+        mapOf(
+            "50500" to Coordinates(41.9037, -1.7272), // Tarazona
+            "50540" to Coordinates(41.8344, -1.5333), // Borja, not a provincial capital
+            "42001" to Coordinates(41.7670, -2.4727), // Soria
+            "50001" to Coordinates(41.6516, -0.8771), // Zaragoza
+            "26001" to Coordinates(42.4667, -2.4457), // Logroño
+            "31001" to Coordinates(42.8178, -1.6446), // Pamplona
+        ),
+    )
+    private fun diaPostalCodes() = catalog.postalCodes.filter { it.first == StoreName.DIA }.map { it.second }
+
+    @Test
+    fun `a store that does not serve the postal code answers with the nearest one it serves`() {
+        catalog.byPostalCode[StoreName.DIA to "50500"] = StoreSearchResult.NotServed
+        catalog.byPostalCode[StoreName.DIA to "42001"] = StoreSearchResult.NotServed
+
+        val result = service(locator = aragon).search(term, tarazona)
+
+        val dia = result.stores[2]
+        assertEquals(StoreStatus.OK, dia.status)
+        assertEquals(NearbyPostalCode("50001", 76), dia.reference)
+        assertEquals(listOf("dia-1"), dia.products.map { it.externalId })
+        assertEquals(listOf("50500", "42001", "50001"), diaPostalCodes())
+        assertTrue(result.stores.take(2).all { it.status == StoreStatus.OK && it.reference == null })
+        // Each answer is stored under its own postal code
+        assertEquals(SnapshotStatus.NOT_SERVED, snapshots.findByQueryTermAndPostalCodeAndStoreName("leche", "50500", StoreName.DIA)?.status)
+        assertEquals(SnapshotStatus.OK, snapshots.findByQueryTermAndPostalCodeAndStoreName("leche", "50001", StoreName.DIA)?.status)
+    }
+
+    @Test
+    fun `postal codes learnt as not served are skipped for any term`() {
+        catalog.byPostalCode[StoreName.DIA to "50500"] = StoreSearchResult.NotServed
+        catalog.byPostalCode[StoreName.DIA to "42001"] = StoreSearchResult.NotServed
+        service(locator = aragon).search(term, tarazona)
+        catalog.postalCodes.clear()
+
+        val dia = service(locator = aragon).search(SearchTerm.of("agua"), tarazona).stores[2]
+
+        assertEquals("50001", dia.reference?.postalCode)
+        assertEquals(listOf("50500", "50001"), diaPostalCodes())
+    }
+
+    @Test
+    fun `a postal code learnt as served is used even if it is not a provincial capital`() {
+        service(locator = aragon).search(term, PostalCode.of("50540"))
+        catalog.byPostalCode[StoreName.DIA to "50500"] = StoreSearchResult.NotServed
+        catalog.postalCodes.clear()
+
+        val dia = service(locator = aragon).search(term, tarazona).stores[2]
+
+        assertEquals(NearbyPostalCode("50540", 18), dia.reference)
+        // Borja's snapshot is fresh: no call for it
+        assertEquals(listOf("50500"), diaPostalCodes())
+    }
+
+    @Test
+    fun `gives up after the probe limit and stays not served`() {
+        catalog.responses[StoreName.DIA] = StoreSearchResult.NotServed
+
+        val dia = service(locator = aragon).search(term, tarazona).stores[2]
+
+        assertEquals(StoreStatus.NOT_SERVED, dia.status)
+        assertNull(dia.reference)
+        assertEquals(listOf("50500", "42001", "50001", "26001"), diaPostalCodes())
+    }
+
+    @Test
+    fun `only the selected stores are read, called and returned, in fixed order`() {
+        val result = service.search(term, cp, only = setOf(StoreName.DIA, StoreName.MERCADONA))
+
+        assertEquals(listOf(StoreName.MERCADONA, StoreName.DIA), result.stores.map { it.store })
+        assertEquals(setOf(StoreName.MERCADONA, StoreName.DIA), catalog.calls.toSet())
+        assertEquals(2, catalog.calls.size)
+        assertNull(snapshots.findByQueryTermAndPostalCodeAndStoreName("leche", "28001", StoreName.ALCAMPO))
+    }
+
+    @Test
+    fun `selected stores all unavailable fail the search even if another store has data`() {
+        service.search(term, cp, only = setOf(StoreName.MERCADONA))
+        catalog.responses[StoreName.DIA] = StoreSearchResult.Unavailable("down")
+
+        assertFailsWith<AllStoresUnavailableException> { service.search(term, cp, only = setOf(StoreName.DIA)) }
     }
 }
