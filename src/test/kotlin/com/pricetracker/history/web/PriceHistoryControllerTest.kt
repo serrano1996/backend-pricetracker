@@ -90,6 +90,39 @@ class PriceHistoryControllerTest(
     }
 
     @Test
+    fun `current prices of several products in one call, in request order, skipping unknown ids`() {
+        persist("0.99", "0.99 €/L")
+        val id = productId()
+
+        mockMvc.get("/api/v1/products") { param("ids", "${UUID.randomUUID()},$id") }.andExpect {
+            status { isOk() }
+            jsonPath("$.products.length()") { value(1) }
+            jsonPath("$.products[0].id") { value(id) }
+            jsonPath("$.products[0].store") { value("mercadona") }
+            jsonPath("$.products[0].current_price") { value(0.99) }
+            jsonPath("$.products[0].unit_price") { value(0.99) }
+            jsonPath("$.products[0].last_checked_at") { isString() }
+        }
+        assertEquals(0L, jdbc.queryForObject("select count(*) from search_metrics", Long::class.java))
+    }
+
+    @Test
+    fun `products batch rejects missing, malformed and too many ids`() {
+        mockMvc.get("/api/v1/products").andExpect {
+            status { isBadRequest() }
+            jsonPath("$.detail") { value("ids is required") }
+        }
+        mockMvc.get("/api/v1/products") { param("ids", "${UUID.randomUUID()},nope") }.andExpect {
+            status { isBadRequest() }
+            jsonPath("$.detail") { value("ids must be 1 to 100 comma-separated UUIDs") }
+        }
+        mockMvc.get("/api/v1/products") { param("ids", List(101) { UUID.randomUUID() }.joinToString(",")) }.andExpect {
+            status { isBadRequest() }
+            jsonPath("$.detail") { value("ids must be 1 to 100 comma-separated UUIDs") }
+        }
+    }
+
+    @Test
     fun `cors rejects origins that are not configured`() {
         mockMvc.options("/api/v1/products/${UUID.randomUUID()}/price-history") {
             header("Origin", "https://evil.example")
