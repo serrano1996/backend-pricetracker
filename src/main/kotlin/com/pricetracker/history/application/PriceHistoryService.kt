@@ -23,4 +23,11 @@ class PriceHistoryService(
         val product = storeProducts.findById(id).orElseThrow { ProductNotFoundException(id) }
         return ProductHistory(product, priceHistory.findByStoreProductIdOrderByRecordedAtAsc(id))
     }
+
+    /** Current data of several products in one query, in [ids] order; unknown ids are skipped (spec 012 RF-1). */
+    @Transactional(readOnly = true)
+    fun current(ids: List<UUID>): List<StoreProductEntity> {
+        val byId = storeProducts.findAllById(ids).associateBy { it.id }
+        return ids.distinct().mapNotNull { byId[it] }
+    }
 }
