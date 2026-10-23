@@ -56,7 +56,9 @@ class SchemaMigrationTest(@Autowired private val jdbc: JdbcTemplate) {
             .associate { it["canonical_name"] to "${it["unit"]}|${it["words"]}" }
 
         // 11 from V2, 16 basic groceries from V4, 7 cleaning products from V5
-        assertEquals(34, types.size)
+        assertEquals(66, types.size)
+        assertEquals("L|leche entera sin lactosa", types["Leche entera sin lactosa"])
+        assertEquals("kg|queso rallado 4 quesos", types["Queso rallado 4 quesos"])
         assertEquals("L|leche entera", types["Leche entera"])
         assertEquals("L|aceite oliva virgen extra", types["Aceite de oliva virgen extra"])
         assertEquals("kg|arroz bomba", types["Arroz bomba"])
